@@ -290,7 +290,7 @@ export default function Dashboard() {
                     <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={110} label={({ name, percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''} labelLine={false} fontSize={11}>
                       {pieData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                     </Pie>
-                    <Tooltip formatter={(v) => fmtFull(v)} contentStyle={{ background: '#1a2236', border: '1px solid #2a3550', borderRadius: 8, fontSize: 12 }} />
+                    <Tooltip formatter={(v) => fmtFull(v)} contentStyle={{ background: '#1a2236', border: '1px solid #2a3550', borderRadius: 8, fontSize: 12, color: '#eef2ff' }} itemStyle={{ color: '#eef2ff' }} labelStyle={{ color: '#eef2ff' }} />
                     <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
                   </PieChart>
                 </ResponsiveContainer>
@@ -424,7 +424,7 @@ export default function Dashboard() {
                       >
                         {stats.departmentBreakdown.filter(d => d.estimatedValue > 0).slice(0, 8).map((entry, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
                       </Pie>
-                      <Tooltip formatter={(v) => fmtFull(v)} contentStyle={{ background: '#1a2236', border: '1px solid #2a3550', borderRadius: 8, fontSize: 12 }} />
+                      <Tooltip formatter={(v) => fmtFull(v)} contentStyle={{ background: '#1a2236', border: '1px solid #2a3550', borderRadius: 8, fontSize: 12, color: '#eef2ff' }} itemStyle={{ color: '#eef2ff' }} labelStyle={{ color: '#eef2ff' }} />
                       <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
                     </PieChart>
                   </ResponsiveContainer>
