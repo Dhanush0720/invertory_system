@@ -6,6 +6,7 @@ const distributionSchema = new mongoose.Schema({
   quantityDistributed: { type: Number, required: true, min: 1 },
   dateOfDistribution: { type: Date, required: true },
   distributedToDepartment: { type: String, required: true, trim: true },
+  distributedTo: { type: String, trim: true },
   authorisedBy: { type: String, required: true, trim: true },
   remarks: { type: String, trim: true },
   distributedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }

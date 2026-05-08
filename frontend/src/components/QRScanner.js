@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { adminAPI } from '../api'; // Use a generic authed api caller or custom one below
-import axios from 'axios';
+import { adminAPI } from '../api';
 
 const QRScanner = ({ onClose }) => {
   const [scanResult, setScanResult] = useState(null);
@@ -23,10 +22,7 @@ const QRScanner = ({ onClose }) => {
       setError(null);
       
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get(`http://localhost:5000/api/items/qr/${decodedText}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await adminAPI.get(`/items/qr/${decodedText}`);
         setScanResult(res.data);
       } catch (err) {
         setError(err.response?.data?.message || 'Item not found in database.');
@@ -45,10 +41,7 @@ const QRScanner = ({ onClose }) => {
 
   const handleQuickDeduct = async () => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5000/api/items/${scanResult._id}/quick-deduct`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await adminAPI.post(`/items/${scanResult._id}/quick-deduct`, {});
       alert('1 Unit Deducted Successfully!');
       setScanResult(prev => ({ ...prev, quantityRemaining: prev.quantityRemaining - 1 }));
     } catch (err) {

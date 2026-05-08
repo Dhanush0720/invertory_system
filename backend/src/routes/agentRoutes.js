@@ -2,12 +2,21 @@ const express = require('express');
 const router = express.Router();
 const { parseInvoiceVision, generateFinancialForecast } = require('../utils/agentService');
 const Distribution = require('../models/Distribution');
+const { protect, authorize } = require('../middleware/auth');
+
+const ALLOWED_VISION_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 // POST: Vision AI (Upload Receipt)
 // Accepts { base64Image: "data:image/jpeg;base64,...", mimeType: "image/jpeg" }
-router.post('/vision', async (req, res) => {
+router.post('/vision', protect, authorize('admin', 'staff'), async (req, res) => {
     try {
         const { base64Image, mimeType } = req.body;
+        if (!base64Image || typeof base64Image !== 'string' || base64Image.length > 8 * 1024 * 1024) {
+            return res.status(400).json({ error: 'A valid image payload is required.' });
+        }
+        if (!ALLOWED_VISION_MIME_TYPES.has(mimeType)) {
+            return res.status(400).json({ error: 'Unsupported image format.' });
+        }
         // Strip data header
         const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
         const data = await parseInvoiceVision(cleanBase64, mimeType);
@@ -19,7 +28,7 @@ router.post('/vision', async (req, res) => {
 });
 
 // GET: Financial Forecast Agent
-router.get('/forecast', async (req, res) => {
+router.get('/forecast', protect, async (req, res) => {
     try {
         // Fetch up to 50 recent distributions for calculation
         const recentDistributions = await Distribution.find()

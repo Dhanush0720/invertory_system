@@ -3,6 +3,7 @@ const router = express.Router();
 const Item = require('../models/Item');
 const Distribution = require('../models/Distribution');
 const { protect, authorize } = require('../middleware/auth');
+const { escapeRegex, sanitizeItemPayload } = require('../utils/validation');
 
 // ── Helper: batch aggregation for all items (replaces N+1 per-item queries)
 async function buildDistMap(itemIds) {
@@ -26,12 +27,15 @@ router.get('/', protect, async (req, res) => {
 
     let query = {};
     if (segment) query.segment = segment;
-    if (search) query.$or = [
-      { itemName: { $regex: search, $options: 'i' } },
-      { company: { $regex: search, $options: 'i' } },
-      { shopName: { $regex: search, $options: 'i' } },
-      { particulars: { $regex: search, $options: 'i' } },
-    ];
+    if (search) {
+      const safeSearch = escapeRegex(search);
+      query.$or = [
+        { itemName: { $regex: safeSearch, $options: 'i' } },
+        { company: { $regex: safeSearch, $options: 'i' } },
+        { shopName: { $regex: safeSearch, $options: 'i' } },
+        { particulars: { $regex: safeSearch, $options: 'i' } },
+      ];
+    }
 
     const [items, total] = await Promise.all([
       Item.find(query).populate('addedBy', 'name').sort('-createdAt').skip(skip).limit(limit),
@@ -78,10 +82,9 @@ router.get('/:id', protect, async (req, res) => {
 // POST /api/items
 router.post('/', protect, authorize('admin', 'staff'), async (req, res) => {
   try {
-    if (!req.body.itemName || req.body.quantityPurchased < 0) {
-      return res.status(400).json({ message: 'Invalid item parameters' });
-    }
-    const item = await Item.create({ ...req.body, addedBy: req.user._id });
+    const { payload, error } = sanitizeItemPayload(req.body);
+    if (error) return res.status(400).json({ message: error });
+    const item = await Item.create({ ...payload, addedBy: req.user._id });
     res.status(201).json(item);
   } catch (err) { res.status(400).json({ message: err.message }); }
 });
@@ -89,7 +92,9 @@ router.post('/', protect, authorize('admin', 'staff'), async (req, res) => {
 // PUT /api/items/:id
 router.put('/:id', protect, authorize('admin', 'staff'), async (req, res) => {
   try {
-    const item = await Item.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const { payload, error } = sanitizeItemPayload(req.body);
+    if (error) return res.status(400).json({ message: error });
+    const item = await Item.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true });
     if (!item) return res.status(404).json({ message: 'Item not found' });
     res.json(item);
   } catch (err) { res.status(400).json({ message: err.message }); }

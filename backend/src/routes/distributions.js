@@ -3,6 +3,7 @@ const router = express.Router();
 const Distribution = require('../models/Distribution');
 const Item = require('../models/Item');
 const { protect, authorize } = require('../middleware/auth');
+const { parsePositiveNumber, sanitizeDistributionPayload } = require('../utils/validation');
 
 // GET /api/distributions
 router.get('/', protect, async (req, res) => {
@@ -25,12 +26,11 @@ router.get('/', protect, async (req, res) => {
 // POST /api/distributions — admin & staff only
 router.post('/', protect, authorize('admin', 'staff'), async (req, res) => {
   try {
-    const requestedQty = Number(req.body.quantityDistributed);
-    if (!requestedQty || requestedQty <= 0) {
-      return res.status(400).json({ message: 'Quantity must be greater than 0' });
-    }
+    const { payload, error } = sanitizeDistributionPayload(req.body);
+    if (error) return res.status(400).json({ message: error });
+    const requestedQty = payload.quantityDistributed;
 
-    const item = await Item.findById(req.body.item);
+    const item = await Item.findById(payload.item);
     if (!item) return res.status(404).json({ message: 'Item not found' });
 
     // Check available stock
@@ -48,8 +48,7 @@ router.post('/', protect, authorize('admin', 'staff'), async (req, res) => {
     }
 
     const distribution = await Distribution.create({
-      ...req.body,
-      quantityDistributed: requestedQty,
+      ...payload,
       distributedBy: req.user._id
     });
 
@@ -74,8 +73,8 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
 // POST /api/distributions/:id/return — admin & staff only
 router.post('/:id/return', protect, authorize('admin', 'staff'), async (req, res) => {
   try {
-    const returnQty = Number(req.body.quantityReturned);
-    if (!returnQty || returnQty <= 0) {
+    const returnQty = parsePositiveNumber(req.body.quantityReturned);
+    if (!returnQty) {
       return res.status(400).json({ message: 'Return quantity must be greater than 0' });
     }
 

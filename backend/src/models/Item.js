@@ -16,7 +16,7 @@ const itemSchema = new mongoose.Schema({
 
   // === ESTATE MANAGER EXTENSIONS ===
   assetType:           { type: String, enum: ['Fixed Asset', 'Consumable'], default: 'Consumable' },
-  qrCodeId:            { type: String, sparse: true, unique: true }, // unique string from QR
+  qrCodeId:            { type: String }, // unique string from QR — index declared below
   location:            { type: mongoose.Schema.Types.ObjectId, ref: 'Location' }, // physical location
   warrantyExpiryDate:  { type: Date },
   nextMaintenanceDate: { type: Date },
@@ -33,8 +33,8 @@ itemSchema.index({ dateOfPurchase: -1 });
 itemSchema.index({ totalCost: -1 });
 itemSchema.index({ createdAt: -1 });
 itemSchema.index({ assetType: 1 });
-itemSchema.index({ qrCodeId: 1 });
 itemSchema.index({ itemName: 'text', company: 'text', shopName: 'text', particulars: 'text' });
+itemSchema.index({ qrCodeId: 1 }, { unique: true, sparse: true }); // sparse allows multiple null values
 
 // Auto-calculate totalCost
 itemSchema.pre('save', function (next) {

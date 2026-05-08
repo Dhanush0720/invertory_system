@@ -3,7 +3,7 @@ const Alert = require('../models/Alert');
 // Assuming your inventory model is called Item. Adjust the path/name if needed!
 const Item = require('../models/Item'); 
 const { generateInventoryInsights } = require('../utils/agentService');
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 const path = require('path');
 
 async function runAutonomousAgent() {
@@ -87,11 +87,16 @@ async function runAutonomousAgent() {
                     ``,
                     `*Action:* ${highAlerts[0].recommended_action}`
                 ];
-                const msg = msgLines.join('\n').replace(/"/g, "'");
+                const msg = msgLines.join('\n');
                 const scriptPath = path.join(__dirname, '../utils/whatsapp_sender.py');
-                const command = `python "${scriptPath}" "${phone}" "${msg}"`;
-                exec(command, (error, stdout, stderr) => {
-                    if (error) console.error(`❌ WhatsApp failed: ${error.message}`);
+                const child = spawn('python', [scriptPath, phone, msg], { shell: false });
+                let stdout = '';
+                let stderr = '';
+
+                child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+                child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+                child.on('close', (code) => {
+                    if (code !== 0) console.error(`❌ WhatsApp failed with exit code ${code}`);
                     else console.log(`✅ WhatsApp sent: ${stdout.trim()}`);
                     if (stderr) console.warn(`⚠️ Python stderr: ${stderr.trim()}`);
                 });
