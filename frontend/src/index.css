@@ -750,16 +750,32 @@ select.form-control option { background: #1a2035; }
 @media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); }
   .sidebar.sidebar-open { transform: translateX(0); }
-  .main-content { margin-left: 0; }
-  .page { padding: 16px 18px; }
-  .topbar { display: flex; }
+  .main-content { margin-left: 0; padding-bottom: 24px; }
+  .page { padding: 16px; }
+  .topbar { display: flex; position: sticky; top: 0; z-index: 90; }
   .sidebar-overlay { display: block; }
+  
   .stats-grid, .grid-2, .grid-3, .grid-4, .form-row, .form-row-3 { grid-template-columns: 1fr; }
-  .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .search-bar { flex-direction: column; align-items: stretch; }
-  .search-input-wrap { flex: none; }
-  .stat-card, .user-card { flex-direction: column; text-align: center; }
-  .modal { padding: 24px 20px; max-width: none; margin: 12px; border-radius: var(--radius-lg); }
-  .page-title { font-size: 22px; }
-  .login-card { padding: 36px 28px; }
+  
+  .page-header { flex-direction: column; align-items: stretch; gap: 16px; }
+  .page-header > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
+  .page-header .btn { flex: 1; min-width: calc(50% - 8px); text-align: center; justify-content: center; }
+  
+  .search-bar { flex-direction: column; align-items: stretch; gap: 10px; }
+  .search-input-wrap { flex: none; width: 100%; }
+  
+  .stat-card, .user-card { flex-direction: column; text-align: center; gap: 12px; }
+  
+  .modal { padding: 24px 16px; max-width: calc(100% - 32px); margin: 16px; border-radius: var(--radius-lg); }
+  
+  .page-title { font-size: 24px; }
+  .login-card { padding: 32px 24px; width: 90%; }
+  
+  /* Touch target improvements */
+  .btn, .form-control { min-height: 44px; }
+  
+  /* Table mobile scrolling */
+  table { font-size: 12px; min-width: 600px; }
+  thead th { font-size: 9px; padding: 10px 12px; }
+  tbody td { padding: 10px 12px; }
 }
