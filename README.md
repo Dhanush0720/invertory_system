@@ -35,22 +35,19 @@ A next-generation, AI-powered full-stack web application for managing college in
 ## 📸 Screenshots
 
 ### 1. Dashboard Overview
-![Dashboard Overview](./screenshots/image1.png)
+![Dashboard Overview](./screenshots/image5.png)
 
 ### 2. Smart Alerts & Forecasting
-![Smart Alerts](./screenshots/image2.png)
+![Smart Alerts](./screenshots/image1.png)
 
 ### 3. Inventory Register
-![Inventory Register](./screenshots/image3.png)
+![Inventory Register](./screenshots/image2.png)
 
-### 4. Distributions
-![Distributions](./screenshots/image4.png)
+### 4. Distributions Report
+![Distributions Report](./screenshots/image4.png)
 
-### 5. Master Data
-![Master Data](./screenshots/image5.png)
-
-### 6. Analytics Drilldown
-![Analytics](./screenshots/image6.png)
+### 5. AI Chart Bot
+![AI Chart Bot](./screenshots/image6.png)
 
 ---
 
