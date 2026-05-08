@@ -1,0 +1,94 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { LOGO_PATH, COLLEGE_NAME, COLLEGE_SUB } from '../config/logo';
+
+function LogoImage() {
+  const [err, setErr] = useState(false);
+  if (err) return <div className="icon">📷<br/><span style={{fontSize: 10, marginTop: 4, display: 'block'}}>LOGO HERE</span></div>;
+  return (
+    <img
+      src={LOGO_PATH}
+      alt="College Logo"
+      onError={() => setErr(true)}
+      style={{ width: 72, height: 72, objectFit: 'contain', marginBottom: 12, borderRadius: 12 }}
+    />
+  );
+}
+
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await login(email, password);
+      navigate('/');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="login-page">
+      <div className="login-bg" />
+      <div className="login-card">
+        <div className="login-logo">
+          <LogoImage />
+          <h1>{COLLEGE_NAME}</h1>
+          <p>{COLLEGE_SUB}</p>
+        </div>
+
+        {error && <div className="alert alert-error">⚠️ {error}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">Email Address</label>
+            <input
+              type="email"
+              className="form-control"
+              placeholder="Enter your email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Password</label>
+            <input
+              type="password"
+              className="form-control"
+              placeholder="Enter your password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{ width: '100%', justifyContent: 'center', padding: '12px', marginTop: 8, fontSize: 15 }}
+            disabled={loading}
+          >
+            {loading ? 'Signing in...' : '🔐 Sign In'}
+          </button>
+        </form>
+
+        <div style={{ marginTop: 24, padding: 16, background: 'var(--surface2)', borderRadius: 8, fontSize: 13, color: 'var(--text2)' }}>
+          <strong style={{ color: 'var(--text)' }}>Default Admin Login:</strong><br />
+          Email: admin@college.edu<br />
+          Password: Admin@123
+        </div>
+      </div>
+    </div>
+  );
+}
