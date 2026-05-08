@@ -83,11 +83,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div style={{ marginTop: 24, padding: 16, background: 'var(--surface2)', borderRadius: 8, fontSize: 13, color: 'var(--text2)' }}>
-          <strong style={{ color: 'var(--text)' }}>Default Admin Login:</strong><br />
-          Email: admin@college.edu<br />
-          Password: Admin@123
-        </div>
       </div>
     </div>
   );
