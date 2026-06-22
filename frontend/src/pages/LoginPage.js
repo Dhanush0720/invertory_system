@@ -21,7 +21,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, loginDemo } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -36,6 +36,11 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDemoLogin = () => {
+    loginDemo();
+    navigate('/');
   };
 
   return (
@@ -83,6 +88,30 @@ export default function LoginPage() {
           </button>
         </form>
 
+        <div style={{ margin: '18px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          <span style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>OR</span>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        </div>
+
+        <button
+          type="button"
+          className="btn"
+          onClick={handleDemoLogin}
+          style={{
+            width: '100%',
+            justifyContent: 'center',
+            padding: '12px',
+            fontSize: 15,
+            background: 'linear-gradient(135deg, rgba(249,115,22,0.12) 0%, rgba(168,85,247,0.08) 100%)',
+            border: '1px solid rgba(249, 115, 22, 0.35)',
+            color: '#fb923c',
+            boxShadow: '0 4px 20px rgba(249,115,22,0.08)',
+            fontWeight: 700
+          }}
+        >
+          ✨ Explore Guest Demo
+        </button>
 
       </div>
     </div>

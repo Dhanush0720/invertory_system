@@ -233,6 +233,79 @@ export default function InventoryPage() {
     }
   };
 
+  const handleMockVisionUpload = () => {
+    setVisionLoading(true);
+    setError('');
+
+    setTimeout(() => {
+      const samples = [
+        {
+          itemName: 'Dell Latitude 3440 Laptop (Core i5 / 16GB)',
+          company: 'Dell',
+          billNo: 'DL-2026-9901',
+          quantityPurchased: '10',
+          unitPrice: '48500',
+          totalCost: '485000',
+          shopName: 'Dell Exclusive Store',
+          segment: 'ELECTRONICS',
+          particulars: 'Faculty development room laptops'
+        },
+        {
+          itemName: 'Supreme Plastic Armless Chairs (Black)',
+          company: 'Supreme',
+          billNo: 'SUP-4491-X',
+          quantityPurchased: '50',
+          unitPrice: '750',
+          totalCost: '37500',
+          shopName: 'Supreme Furniture Mart',
+          segment: 'FURNITURE',
+          particulars: 'Seminar hall extra seating stock'
+        },
+        {
+          itemName: 'A4 Copier Paper Bundles (75 GSM)',
+          company: 'Century Copier',
+          billNo: 'CEN-8812',
+          quantityPurchased: '100',
+          unitPrice: '280',
+          totalCost: '28000',
+          shopName: 'Stationery Hub',
+          segment: 'STATIONERY',
+          particulars: 'College printing division general quota'
+        },
+        {
+          itemName: 'HDMI Male-to-Male Cables 5 Metre',
+          company: 'Terabyte',
+          billNo: 'TB-789-22',
+          quantityPurchased: '25',
+          unitPrice: '320',
+          totalCost: '8000',
+          shopName: 'Tech Solutions Ltd',
+          segment: 'COMPUTER ACCESSORIES',
+          particulars: 'Projector classrooms audio-visual upgrade'
+        }
+      ];
+
+      const chosen = samples[Math.floor(Math.random() * samples.length)];
+      setForm({
+        segment: chosen.segment,
+        itemName: chosen.itemName,
+        dateOfPurchase: new Date().toISOString().slice(0, 10),
+        company: chosen.company,
+        billNo: chosen.billNo,
+        uom: 'Nos',
+        quantityPurchased: chosen.quantityPurchased,
+        unitPrice: chosen.unitPrice,
+        totalCost: chosen.totalCost,
+        shopName: chosen.shopName,
+        particulars: chosen.particulars
+      });
+
+      setSuccess('✨ [Demo Mode] AI successfully simulated parsing sample invoice!');
+      setVisionLoading(false);
+      setTimeout(() => setSuccess(''), 4000);
+    }, 900);
+  };
+
 
 
   const exportPDF = () => {
@@ -430,7 +503,18 @@ export default function InventoryPage() {
               <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.08em', margin: 0 }}>PURCHASE DETAILS (Columns A–K)</p>
 
               {!editItem && (
-                <div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {localStorage.getItem('isDemo') === 'true' && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{ background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}
+                      onClick={handleMockVisionUpload}
+                      disabled={visionLoading}
+                    >
+                      {visionLoading ? 'Scanning...' : '🪄 Scan Sample Invoice (Demo)'}
+                    </button>
+                  )}
                   <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
                     {visionLoading ? 'Scanning...' : '📸 AI Scan Invoice'}
                     <input type="file" accept="image/*" onChange={handleVisionUpload} style={{ display: 'none' }} disabled={visionLoading} />

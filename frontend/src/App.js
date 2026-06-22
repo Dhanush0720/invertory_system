@@ -10,6 +10,7 @@ const InventoryPage     = lazy(() => import('./pages/InventoryPage'));
 const DistributionsPage = lazy(() => import('./pages/DistributionsPage'));
 const UsersPage         = lazy(() => import('./pages/UsersPage'));
 const MasterDataPage    = lazy(() => import('./pages/MasterDataPage'));
+const AuditLogsPage     = lazy(() => import('./pages/AuditLogsPage'));
 
 function PageLoader() {
   return (
@@ -52,6 +53,11 @@ function App() {
             <Route path="master" element={
               <PrivateRoute adminOnly>
                 <Suspense fallback={<PageLoader />}><MasterDataPage /></Suspense>
+              </PrivateRoute>
+            } />
+            <Route path="audit-logs" element={
+              <PrivateRoute adminOnly>
+                <Suspense fallback={<PageLoader />}><AuditLogsPage /></Suspense>
               </PrivateRoute>
             } />
           </Route>

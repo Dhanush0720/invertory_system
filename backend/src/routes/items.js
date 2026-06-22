@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Item = require('../models/Item');
 const Distribution = require('../models/Distribution');
+const AuditLog = require('../models/AuditLog');
 const { protect, authorize } = require('../middleware/auth');
 const { escapeRegex, sanitizeItemPayload } = require('../utils/validation');
 
@@ -85,6 +86,12 @@ router.post('/', protect, authorize('admin', 'staff'), async (req, res) => {
     const { payload, error } = sanitizeItemPayload(req.body);
     if (error) return res.status(400).json({ message: error });
     const item = await Item.create({ ...payload, addedBy: req.user._id });
+    await AuditLog.create({
+      item: item._id,
+      performedBy: req.user._id,
+      actionType: 'CREATED',
+      notes: `Item ${item.itemName} created`
+    });
     res.status(201).json(item);
   } catch (err) { res.status(400).json({ message: err.message }); }
 });
@@ -96,6 +103,12 @@ router.put('/:id', protect, authorize('admin', 'staff'), async (req, res) => {
     if (error) return res.status(400).json({ message: error });
     const item = await Item.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true });
     if (!item) return res.status(404).json({ message: 'Item not found' });
+    await AuditLog.create({
+      item: item._id,
+      performedBy: req.user._id,
+      actionType: 'UPDATED',
+      notes: `Item ${item.itemName} updated`
+    });
     res.json(item);
   } catch (err) { res.status(400).json({ message: err.message }); }
 });
@@ -106,6 +119,12 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
     const item = await Item.findByIdAndDelete(req.params.id);
     if (!item) return res.status(404).json({ message: 'Item not found' });
     await Distribution.deleteMany({ item: req.params.id });
+    await AuditLog.create({
+      item: item._id,
+      performedBy: req.user._id,
+      actionType: 'DELETED',
+      notes: `Item ${item.itemName} deleted`
+    });
     res.json({ message: 'Item deleted' });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
@@ -161,6 +180,17 @@ router.post('/bulk-import', protect, authorize('admin', 'staff'), async (req, re
 
     // ── Phase 2: Batch insert all valid items at once
     const inserted = await Item.insertMany(toInsert.map(t => t.doc), { ordered: false });
+
+    // ── Phase 2.5: Batch insert audit logs
+    if (inserted.length > 0) {
+      const auditLogs = inserted.map(item => ({
+        item: item._id,
+        performedBy: req.user._id,
+        actionType: 'CREATED',
+        notes: `Item ${item.itemName} created via bulk import`
+      }));
+      await AuditLog.insertMany(auditLogs, { ordered: false });
+    }
 
     const succeeded = [];
     // ── Phase 3: Batch-build distributions for rows that had distQty

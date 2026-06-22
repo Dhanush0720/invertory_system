@@ -33,6 +33,7 @@ const navItems = [
 const adminItems = [
   { to: '/users', label: 'User Management', emoji: '👥', desc: 'Access Control' },
   { to: '/master', label: 'Master Data', emoji: '⚙️', desc: 'Vendors, Departments' },
+  { to: '/audit-logs', label: 'Audit Logs', emoji: '🛡️', desc: 'System Activity' },
 ];
 
 export default function Layout() {
@@ -42,6 +43,23 @@ export default function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => { logout(); navigate('/login'); };
+  const isDemoActive = localStorage.getItem('isDemo') === 'true';
+
+  const handleResetDemo = () => {
+    if (window.confirm('Reset all demo data in localStorage back to default values?')) {
+      localStorage.removeItem('demo_items');
+      localStorage.removeItem('demo_distributions');
+      localStorage.removeItem('demo_alerts');
+      localStorage.removeItem('demo_audit');
+      localStorage.removeItem('demo_vendors');
+      localStorage.removeItem('demo_departments');
+      localStorage.removeItem('demo_particulars');
+      window.location.reload();
+    }
+  };
+  const filteredAdminItems = isDemoActive
+    ? adminItems.filter(item => item.to !== '/audit-logs')
+    : adminItems;
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   const roleColors = { admin: '#f97316', staff: '#60a5fa', viewer: '#a78bfa' };
@@ -89,7 +107,7 @@ export default function Layout() {
           {user?.role === 'admin' && (
             <>
               <div className="nav-label" style={{ marginTop: 20 }}>Administration</div>
-              {adminItems.map(item => (
+              {filteredAdminItems.map(item => (
                 <NavLink
                   key={item.to}
                   to={item.to}
@@ -141,6 +159,56 @@ export default function Layout() {
             College Inventory
           </div>
         </div>
+
+        {isDemoActive && (
+          <div style={{
+            background: 'linear-gradient(90deg, rgba(249,115,22,0.12), rgba(168,85,247,0.08))',
+            borderBottom: '1px solid rgba(249,115,22,0.2)',
+            padding: '10px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            flexWrap: 'wrap',
+            zIndex: 10
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{
+                background: 'rgba(249,115,22,0.2)',
+                border: '1px solid rgba(249,115,22,0.4)',
+                color: '#fb923c',
+                fontSize: 10,
+                fontWeight: 800,
+                padding: '2px 8px',
+                borderRadius: 20,
+                letterSpacing: '0.5px'
+              }}>🧪 DEMO MODE</span>
+              <span style={{ fontSize: 12.5, color: '#cbd5e1', fontWeight: 500 }}>
+                You are exploring as a guest. All operations are running client-side with <strong>localStorage</strong> database simulation.
+              </span>
+            </div>
+            <button
+              onClick={handleResetDemo}
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: '#eef2ff',
+                fontSize: 11,
+                fontWeight: 600,
+                padding: '5px 12px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                fontFamily: 'Space Grotesk, sans-serif'
+              }}
+              onMouseOver={e => e.currentTarget.style.background = 'rgba(240,64,64,0.15)'}
+              onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+            >
+              🔄 Reset Demo Data
+            </button>
+          </div>
+        )}
+
         <Outlet />
       </main>
 

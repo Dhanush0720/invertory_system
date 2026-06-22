@@ -13,7 +13,9 @@ const auditLogSchema = new mongoose.Schema({
       'MAINTENANCE_PERFORMED', 
       'AUDIT_VERIFIED', 
       'DOCUMENT_UPLOADED',
-      'DELETED'
+      'DELETED',
+      'DISTRIBUTED',
+      'RETURNED'
     ] 
   },
   previousState: { type: mongoose.Schema.Types.Mixed }, // e.g. old location or old quantity

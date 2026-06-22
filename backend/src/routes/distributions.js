@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Distribution = require('../models/Distribution');
 const Item = require('../models/Item');
+const AuditLog = require('../models/AuditLog');
 const { protect, authorize } = require('../middleware/auth');
 const { parsePositiveNumber, sanitizeDistributionPayload } = require('../utils/validation');
 
@@ -52,6 +53,13 @@ router.post('/', protect, authorize('admin', 'staff'), async (req, res) => {
       distributedBy: req.user._id
     });
 
+    await AuditLog.create({
+      item: item._id,
+      performedBy: req.user._id,
+      actionType: 'DISTRIBUTED',
+      notes: `Distributed ${requestedQty} units to ${payload.distributedToDepartment}`
+    });
+
     const populated = await distribution.populate('item', 'itemName category');
     res.status(201).json(populated);
   } catch (err) {
@@ -64,6 +72,14 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const dist = await Distribution.findByIdAndDelete(req.params.id);
     if (!dist) return res.status(404).json({ message: 'Distribution record not found' });
+
+    await AuditLog.create({
+      item: dist.item,
+      performedBy: req.user._id,
+      actionType: 'UPDATED',
+      notes: `Deleted distribution record for ${dist.quantityDistributed} units (returned to stock)`
+    });
+
     res.json({ message: 'Distribution deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -87,7 +103,14 @@ router.post('/:id/return', protect, authorize('admin', 'staff'), async (req, res
 
     dist.quantityDistributed -= returnQty;
     dist.remarks = `${dist.remarks ? dist.remarks + ' | ' : ''}Returned ${returnQty} units on ${new Date().toLocaleDateString('en-IN')}`;
-    
+
+    await AuditLog.create({
+      item: dist.item,
+      performedBy: req.user._id,
+      actionType: 'RETURNED',
+      notes: `Returned ${returnQty} units to stock from ${dist.distributedToDepartment}`
+    });
+
     // Auto-delete distribution if all items are returned
     if (dist.quantityDistributed === 0) {
       await dist.deleteOne();

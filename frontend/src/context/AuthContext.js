@@ -19,9 +19,24 @@ export const AuthProvider = ({ children }) => {
     return user;
   };
 
+  const loginDemo = () => {
+    localStorage.setItem('isDemo', 'true');
+    const demoUser = {
+      id: 'demo-user-id',
+      name: 'Guest Explorer',
+      email: 'guest@demo.com',
+      role: 'admin',
+    };
+    localStorage.setItem('token', 'mock-demo-token');
+    localStorage.setItem('user', JSON.stringify(demoUser));
+    setUser(demoUser);
+    return demoUser;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('isDemo');
     setUser(null);
   };
 
@@ -34,7 +49,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, can, loading }}>
+    <AuthContext.Provider value={{ user, login, loginDemo, logout, can, loading }}>
       {children}
     </AuthContext.Provider>
   );
