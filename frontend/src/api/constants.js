@@ -13,11 +13,13 @@ export const UOM_OPTIONS = ['Nos', 'Kg', 'Litres', 'Metres', 'Box', 'Set', 'Pair
 export const ROLE_COLORS = {
   admin: '#ef4444',
   staff: '#3b82f6',
-  viewer: '#10b981'
+  viewer: '#10b981',
+  mess: '#8b5cf6'
 };
 
 export const ROLE_LABELS = {
   admin: 'Admin',
   staff: 'Staff / Estate Manager',
-  viewer: 'Viewer'
+  viewer: 'Viewer',
+  mess: 'Mess Manager'
 };

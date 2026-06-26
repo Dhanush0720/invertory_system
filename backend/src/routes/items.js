@@ -101,13 +101,26 @@ router.put('/:id', protect, authorize('admin', 'staff'), async (req, res) => {
   try {
     const { payload, error } = sanitizeItemPayload(req.body);
     if (error) return res.status(400).json({ message: error });
+
+    const existingItem = await Item.findById(req.params.id);
+    if (!existingItem) return res.status(404).json({ message: 'Item not found' });
+
+    const qtyChanged = existingItem.quantityPurchased !== payload.quantityPurchased;
+    if (qtyChanged) {
+      const varianceReason = req.body.varianceReason;
+      if (!varianceReason || typeof varianceReason !== 'string' || !varianceReason.trim()) {
+        return res.status(400).json({ message: 'Variance reason is mandatory when adjusting stock quantity.' });
+      }
+    }
+
     const item = await Item.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true });
-    if (!item) return res.status(404).json({ message: 'Item not found' });
     await AuditLog.create({
       item: item._id,
       performedBy: req.user._id,
       actionType: 'UPDATED',
-      notes: `Item ${item.itemName} updated`
+      notes: qtyChanged 
+        ? `Item updated. Qty adjusted: ${existingItem.quantityPurchased} -> ${item.quantityPurchased}. Reason: ${req.body.varianceReason}`
+        : `Item ${item.itemName} updated`
     });
     res.json(item);
   } catch (err) { res.status(400).json({ message: err.message }); }
@@ -116,6 +129,11 @@ router.put('/:id', protect, authorize('admin', 'staff'), async (req, res) => {
 // DELETE /api/items/:id
 router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
+    const varianceReason = req.body.varianceReason || req.query.varianceReason;
+    if (!varianceReason || typeof varianceReason !== 'string' || !varianceReason.trim()) {
+      return res.status(400).json({ message: 'Reason for deletion is mandatory.' });
+    }
+
     const item = await Item.findByIdAndDelete(req.params.id);
     if (!item) return res.status(404).json({ message: 'Item not found' });
     await Distribution.deleteMany({ item: req.params.id });
@@ -123,7 +141,7 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
       item: item._id,
       performedBy: req.user._id,
       actionType: 'DELETED',
-      notes: `Item ${item.itemName} deleted`
+      notes: `Item ${item.itemName} deleted. Reason: ${varianceReason}`
     });
     res.json({ message: 'Item deleted' });
   } catch (err) { res.status(500).json({ message: err.message }); }

@@ -78,7 +78,7 @@ export default function UsersPage() {
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: ROLE_COLORS[role], display: 'inline-block' }} />
             <span style={{ fontSize: 13 }}><strong>{label}</strong></span>
             <span style={{ fontSize: 12, color: 'var(--text2)' }}>
-              {role === 'admin' ? '— Full access' : role === 'staff' ? '— Add & distribute' : '— Read only'}
+              {role === 'admin' ? '— Full access' : role === 'staff' ? '— Add & distribute' : role === 'mess' ? '— Mess module only' : '— Read only'}
             </span>
           </div>
         ))}
@@ -174,6 +174,7 @@ export default function UsersPage() {
                   <option value="admin">👑 Admin — Full access</option>
                   <option value="staff">📦 Staff / Estate Manager — Add & distribute</option>
                   <option value="viewer">👁️ Viewer — Read only</option>
+                  <option value="mess">🍽️ Mess Manager — Mess module only</option>
                 </select>
               </div>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>

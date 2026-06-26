@@ -13,6 +13,7 @@
   
   /* Four-Step Surface Ladder */
   --surface:          #0f1011; /* Level 1: Cards, panels, sidebar */
+  --card-bg:          var(--surface);
   --surface2:         #141516; /* Level 2: Hovered cards, user cards */
   --surface3:         #18191a; /* Level 3: Active items, menus */
   --surface4:         #191a1b; /* Level 4: Deepest lifted surfaces */
@@ -91,6 +92,7 @@ body.light {
   
   /* Four-Step Surface Ladder */
   --surface:          #ffffff; /* Level 1: Cards, panels, sidebar */
+  --card-bg:          var(--surface);
   --surface2:         #f4f5f6; /* Level 2: Hovered cards, user cards */
   --surface3:         #eef0f2; /* Level 3: Active items, menus */
   --surface4:         #e2e4e8; /* Level 4: Deepest lifted surfaces */
@@ -534,12 +536,12 @@ tbody tr:last-child td { border-bottom: none; }
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
-.badge-success { background: rgba(39, 166, 68, 0.1); color: var(--success); border: 1px solid rgba(39, 166, 68, 0.25); }
-.badge-danger  { background: rgba(224, 49, 49, 0.1);  color: var(--danger);  border: 1px solid rgba(224, 49, 49, 0.25); }
-.badge-warning { background: rgba(245, 159, 0, 0.1); color: var(--warning); border: 1px solid rgba(245, 159, 0, 0.25); }
-.badge-info    { background: rgba(25, 113, 194, 0.1); color: var(--info);    border: 1px solid rgba(25, 113, 194, 0.25); }
+.badge-success { background: #22c55e; color: #fff; border: 1px solid #16a34a; font-weight: 700; }
+.badge-danger  { background: #ef4444; color: #fff; border: 1px solid #dc2626; font-weight: 700; }
+.badge-warning { background: #f59e0b; color: #fff; border: 1px solid #d97706; font-weight: 700; }
+.badge-info    { background: rgba(25, 113, 194, 0.15); color: var(--info);    border: 1px solid rgba(25, 113, 194, 0.3); }
 .badge-default { background: var(--surface3); color: var(--text3); border: 1px solid var(--border); }
-.badge-purple  { background: rgba(134, 46, 156, 0.1); color: var(--purple); border: 1px solid rgba(134, 46, 156, 0.25); }
+.badge-purple  { background: rgba(134, 46, 156, 0.15); color: var(--purple); border: 1px solid rgba(134, 46, 156, 0.3); }
 
 /* ═══ BUTTONS ══════════════════════════════════════════════════════ */
 .btn {
@@ -855,4 +857,62 @@ select.form-control option { background: var(--surface); color: var(--text); }
   table { font-size: 12px; min-width: 600px; }
   thead th { font-size: 10px; padding: 10px 12px; }
   tbody td { padding: 10px 12px; }
+}
+
+/* ═══ ANIMATIONS & VISUAL POLISH ═══════════════════════════════════ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+/* Card hover lift effect */
+.card {
+  transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+              box-shadow 0.2s cubic-bezier(0.25, 0.8, 0.25, 1),
+              border-color 0.2s ease;
+}
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Skeleton loading placeholder */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite ease-in-out;
+  border-radius: var(--radius-sm);
+}
+
+/* Fade-in for page content */
+.page {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Smooth button press */
+.btn:active, button:active {
+  transform: scale(0.97);
+}
+
+/* Nav item smooth transition */
+.nav-item {
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+.nav-item:active {
+  transform: scale(0.98);
 }

@@ -11,7 +11,7 @@ import { COLLEGE_NAME } from '../config/logo';
 const emptyForm = {
   segment: '', itemName: '', dateOfPurchase: '', company: '',
   billNo: '', uom: 'Nos', quantityPurchased: '', unitPrice: '',
-  totalCost: '', shopName: '', particulars: ''
+  totalCost: '', shopName: '', particulars: '', varianceReason: ''
 };
 
 const emptyDist = {
@@ -115,7 +115,8 @@ export default function InventoryPage() {
       unitPrice: item.unitPrice || '',
       totalCost: item.totalCost || '',
       shopName: item.shopName || '',
-      particulars: item.particulars || ''
+      particulars: item.particulars || '',
+      varianceReason: ''
     });
     setError(''); setShowAddModal(true);
   };
@@ -138,9 +139,18 @@ export default function InventoryPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this item and all its distributions?')) return;
-    try { await itemsAPI.delete(id); fetchItems(); setSuccess('Deleted.'); setTimeout(() => setSuccess(''), 3000); }
-    catch (err) { setError(err.response?.data?.message || 'Failed to delete'); }
+    const reason = window.prompt('To delete this catalog item, please enter the reason for deletion (Mandatory):');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('Item deletion cancelled. A valid reason is mandatory.');
+      return;
+    }
+    try {
+      await itemsAPI.delete(id, reason.trim());
+      fetchItems();
+      setSuccess('Deleted.');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) { setError(err.response?.data?.message || 'Failed to delete'); }
   };
 
   const handleDist = async (e) => {
@@ -580,6 +590,21 @@ export default function InventoryPage() {
                   <input type="number" className="form-control" placeholder="0.00" min="0" step="any" style={{ background: 'var(--surface2)', fontWeight: 700, color: '#f97316' }} value={form.totalCost} onChange={handleTotalCostChange} />
                 </div>
               </div>
+              {editItem && Number(form.quantityPurchased) !== Number(editItem.quantityPurchased) && (
+                <div className="form-row">
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label className="form-label" style={{ color: 'var(--warning, #f59e0b)', fontWeight: 'bold' }}>⚠️ Stock Adjustment Reason *</label>
+                    <select className="form-control" style={{ borderColor: 'var(--warning, #f59e0b)' }} value={form.varianceReason || ''} onChange={e => setForm({ ...form, varianceReason: e.target.value })} required>
+                      <option value="">-- Select reason for quantity change --</option>
+                      <option value="Cycle Count Correction">Cycle Count Correction</option>
+                      <option value="Damaged / Broken">Damaged / Broken</option>
+                      <option value="Data Entry Correction">Data Entry Correction</option>
+                      <option value="Theft / Lost">Theft / Lost</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              )}
               {/* Row 4: Shop + Particulars */}
               <div className="form-row">
                 <div className="form-group">

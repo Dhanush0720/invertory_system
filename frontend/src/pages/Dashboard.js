@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { dashboardAPI, itemsAPI, agentsAPI } from '../api';
+import { dashboardAPI, itemsAPI, agentsAPI, messAPI } from '../api';
 import { CATEGORIES } from '../api/constants';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -9,8 +9,7 @@ import {
 // 1. IMPORT ADDED HERE
 import SmartAlerts from '../components/SmartAlerts'; 
 import AskNirvahana from '../components/AskJarvis';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+// jsPDF is dynamically imported on-demand for performance (saves ~400KB from initial bundle)
 
 const PALETTE = ['#f97316','#3b82f6','#22c55e','#a855f7','#ec4899','#f59e0b','#06b6d4','#84cc16','#ef4444','#10b981'];
 
@@ -89,6 +88,8 @@ export default function Dashboard() {
   const [forecast, setForecast] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [messItems, setMessItems] = useState([]);
+  const [messMenu, setMessMenu]   = useState([]);
 
   // inventory filter state
   const [search,           setSearch]           = useState('');
@@ -102,14 +103,18 @@ export default function Dashboard() {
     Promise.all([
       dashboardAPI.getStats(), 
       itemsAPI.getAll({ limit: 200 }), // fetch up to 200 items for dashboard table
-      agentsAPI.getForecast().catch(() => ({ data: { forecast: "Forecast currently unavailable." } }))
+      agentsAPI.getForecast().catch(() => ({ data: { forecast: "Forecast currently unavailable." } })),
+      messAPI.getItems().catch(() => ({ data: [] })),
+      messAPI.getMenu().catch(() => ({ data: [] }))
     ])
-      .then(([s, i, f]) => { 
+      .then(([s, i, f, mi, mm]) => { 
         setStats(s.data); 
         // Handle both old (array) and new paginated response shape
         const itemData = i.data;
         setAllItems(Array.isArray(itemData) ? itemData : (itemData.items || [])); 
-        setForecast(f?.data?.forecast); 
+        setForecast(f?.data?.forecast);
+        setMessItems(Array.isArray(mi.data) ? mi.data : []);
+        setMessMenu(Array.isArray(mm.data) ? mm.data : []);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -133,7 +138,10 @@ export default function Dashboard() {
   const hasFilters = search || catFilter || quickFilter;
   const clearFilters = () => { setSearch(''); setCatFilter(''); setQuickFilter(''); setSortBy('name'); };
 
-  const exportDepartmentReport = (deptData) => {
+  const exportDepartmentReport = async (deptData) => {
+    // Dynamic import for performance — loads jsPDF only when needed
+    const { default: jsPDF } = await import('jspdf');
+    const { default: autoTable } = await import('jspdf-autotable');
     const doc = new jsPDF();
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
@@ -166,6 +174,18 @@ export default function Dashboard() {
 
     doc.save(`${deptData.department}_Audit_Report.pdf`);
   };
+
+  // Mess Snapshot computed values
+  const messLowStock = messItems.filter(i => i.quantity <= i.threshold && i.quantity > 0).length;
+  const messOutOfStock = messItems.filter(i => i.quantity <= 0).length;
+  const messExpiring = messItems.filter(i => {
+    if (!i.expiryDate) return false;
+    const diff = (new Date(i.expiryDate) - new Date()) / (1000 * 60 * 60 * 24);
+    return diff >= 0 && diff <= 3;
+  });
+  const messStockValue = messItems.reduce((a, i) => a + (i.quantity * i.costPerUnit), 0);
+  const todayDay = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  const todayMenu = messMenu.find(m => m.dayOfWeek === todayDay);
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300, flexDirection: 'column', gap: 16 }}>
@@ -225,6 +245,63 @@ export default function Dashboard() {
         <StatCard icon="🗂️" label="Segments / Categories" value={(stats.categoryBreakdown || []).length} color="#06b6d4" />
         <StatCard icon="📋" label="Distributions Done" value={(stats.recentDistributions?.length ?? 0)} color="#84cc16" />
       </div>
+
+      {/* ── MESS MANAGEMENT SNAPSHOT ── */}
+      {messItems.length > 0 && (
+        <div className="card" style={{ marginBottom: 24, animation: 'fadeIn 0.4s ease' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'rgba(249,115,22,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🍽️</div>
+              <div>
+                <h3 className="heading" style={{ fontSize: 15, margin: 0 }}>Mess Management Snapshot</h3>
+                <p style={{ fontSize: 11, color: 'var(--text3)', margin: '2px 0 0' }}>{messItems.length} items tracked · Stock value: {fmt(messStockValue)}</p>
+              </div>
+            </div>
+            <a href="/mess" style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+              View Full Mess Panel →
+            </a>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
+            <div style={{ padding: '14px 16px', borderRadius: 10, background: messExpiring.length > 0 ? 'rgba(240,64,64,0.08)' : 'var(--surface2)', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.5px' }}>Expiring Soon</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: messExpiring.length > 0 ? '#f04040' : 'var(--success)', fontFamily: 'Syne, sans-serif', marginTop: 2 }}>{messExpiring.length}</div>
+            </div>
+            <div style={{ padding: '14px 16px', borderRadius: 10, background: messLowStock > 0 ? 'rgba(245,158,11,0.08)' : 'var(--surface2)', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.5px' }}>Low Stock</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: messLowStock > 0 ? '#f59e0b' : 'var(--success)', fontFamily: 'Syne, sans-serif', marginTop: 2 }}>{messLowStock}</div>
+            </div>
+            <div style={{ padding: '14px 16px', borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.5px' }}>Out of Stock</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: messOutOfStock > 0 ? '#ef4444' : 'var(--success)', fontFamily: 'Syne, sans-serif', marginTop: 2 }}>{messOutOfStock}</div>
+            </div>
+            <div style={{ padding: '14px 16px', borderRadius: 10, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.5px' }}>Stock Value</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent)', fontFamily: 'Syne, sans-serif', marginTop: 2 }}>{fmt(messStockValue)}</div>
+            </div>
+          </div>
+          {todayMenu && (
+            <div style={{ padding: '14px 18px', borderRadius: 10, background: 'linear-gradient(135deg, var(--accent-subtle), transparent)', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 8 }}>📅 Today's Menu — {todayDay}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
+                {['breakfast', 'lunch', 'snacks', 'dinner'].map(m => (
+                  <div key={m} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                    <span>{m === 'breakfast' ? '🌅' : m === 'lunch' ? '☀️' : m === 'snacks' ? '🍪' : '🌙'}</span>
+                    <span style={{ color: 'var(--text)', fontWeight: 500 }}>{todayMenu.meals?.[m]?.name || <span style={{ color: 'var(--text3)', fontStyle: 'italic' }}>Not set</span>}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {messExpiring.length > 0 && (
+            <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(240,64,64,0.06)', border: '1px solid rgba(240,64,64,0.2)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16 }}>🚨</span>
+              <span style={{ fontSize: 11, color: '#f04040', fontWeight: 600 }}>
+                Expiring: {messExpiring.map(i => `${i.name} (${i.expiryDate})`).join(', ')}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── NIRVAHANA FINANCIAL FORECASTER ── */}
       <div className="card" style={{ marginBottom: 24, background: 'var(--forecast-bg)', borderColor: 'var(--forecast-border)' }}>

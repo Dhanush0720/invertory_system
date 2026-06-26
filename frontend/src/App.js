@@ -11,6 +11,7 @@ const DistributionsPage = lazy(() => import('./pages/DistributionsPage'));
 const UsersPage         = lazy(() => import('./pages/UsersPage'));
 const MasterDataPage    = lazy(() => import('./pages/MasterDataPage'));
 const AuditLogsPage     = lazy(() => import('./pages/AuditLogsPage'));
+const MessPage          = lazy(() => import('./pages/MessPage'));
 
 function PageLoader() {
   return (
@@ -44,6 +45,9 @@ function App() {
             } />
             <Route path="distributions" element={
               <Suspense fallback={<PageLoader />}><DistributionsPage /></Suspense>
+            } />
+            <Route path="mess" element={
+              <Suspense fallback={<PageLoader />}><MessPage /></Suspense>
             } />
             <Route path="users" element={
               <PrivateRoute adminOnly>

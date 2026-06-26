@@ -28,6 +28,7 @@ const navItems = [
   { to: '/', label: 'Dashboard', icon: '◈', emoji: '📊', exact: true, desc: 'Analytics & Overview' },
   { to: '/inventory', label: 'Inventory', icon: '▣', emoji: '📦', desc: 'Items & Stock' },
   { to: '/distributions', label: 'Distributions', icon: '⊞', emoji: '🚚', desc: 'Issue & Return' },
+  { to: '/mess', label: 'Mess Management', icon: '⊠', emoji: '🍽️', desc: 'Kitchen & Grocery' },
 ];
 
 const adminItems = [
@@ -53,6 +54,12 @@ export default function Layout() {
     localStorage.setItem('sidebarCollapsed', sidebarCollapsed);
   }, [sidebarCollapsed]);
 
+  useEffect(() => {
+    if (user?.role === 'mess' && location.pathname !== '/mess') {
+      navigate('/mess', { replace: true });
+    }
+  }, [user, location.pathname, navigate]);
+
   const handleLogout = () => { logout(); navigate('/login'); };
   const isDemoActive = localStorage.getItem('isDemo') === 'true';
 
@@ -65,6 +72,9 @@ export default function Layout() {
       localStorage.removeItem('demo_vendors');
       localStorage.removeItem('demo_departments');
       localStorage.removeItem('demo_particulars');
+      localStorage.removeItem('demo_mess_items');
+      localStorage.removeItem('demo_mess_logs');
+      localStorage.removeItem('demo_mess_menu');
       window.location.reload();
     }
   };
@@ -121,7 +131,12 @@ export default function Layout() {
         {/* Navigation */}
         <nav className="nav-section">
           <div className="nav-label">Main Navigation</div>
-          {navItems.map(item => (
+          {navItems.filter(item => {
+            if (user?.role === 'mess') {
+              return item.to === '/mess';
+            }
+            return true;
+          }).map(item => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -165,7 +180,7 @@ export default function Layout() {
           {/* Version Tag */}
           <div className="version-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, padding: '0 2px', width: '100%' }}>
             <span style={{ fontSize: 10, color: 'var(--text3)', letterSpacing: '0.5px' }}>ESTATE MANAGER</span>
-            <span style={{ fontSize: 10, background: 'var(--accent-subtle)', color: 'var(--accent)', padding: '2px 7px', borderRadius: 20, border: '1px solid var(--border)', fontWeight: 600 }}>v2.0</span>
+            <span style={{ fontSize: 10, background: 'var(--accent-subtle)', color: 'var(--accent)', padding: '2px 7px', borderRadius: 20, border: '1px solid var(--border)', fontWeight: 600 }}>v3.0</span>
           </div>
 
           <div className="user-card">

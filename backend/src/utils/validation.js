@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const USER_ROLES = ['admin', 'staff', 'viewer'];
+const USER_ROLES = ['admin', 'staff', 'viewer', 'mess'];
 const ASSET_TYPES = ['Fixed Asset', 'Consumable'];
 const ALLOWED_UPLOAD_MIME_TYPES = {
   'application/pdf': '.pdf',

@@ -75,6 +75,7 @@ app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/items', require('./routes/items'));
+app.use('/api/mess', require('./routes/messRoutes'));
 app.use('/api/distributions', require('./routes/distributions'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/dashboard', require('./routes/dashboard').router);

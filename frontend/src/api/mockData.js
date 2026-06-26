@@ -8,6 +8,98 @@ const MOCK_AUDIT_KEY = 'demo_audit';
 const MOCK_VENDORS_KEY = 'demo_vendors';
 const MOCK_DEPTS_KEY = 'demo_departments';
 const MOCK_PARTICULARS_KEY = 'demo_particulars';
+const MOCK_MESS_ITEMS_KEY = 'demo_mess_items';
+const MOCK_MESS_LOGS_KEY = 'demo_mess_logs';
+const MOCK_MESS_MENU_KEY = 'demo_mess_menu';
+const MOCK_MESS_PURCHASES_KEY = 'demo_mess_purchases';
+const MOCK_MESS_SERVED_LOGS_KEY = 'demo_mess_served_logs';
+
+const INITIAL_MESS_ITEMS = [
+  { _id: 'mi-1', name: 'Basmati Rice', category: 'GROCERY', quantity: 250, uom: 'Kg', threshold: 50, costPerUnit: 75, expiryDate: '2027-06-01' },
+  { _id: 'mi-2', name: 'Fresh Potatoes', category: 'VEGETABLE', quantity: 80, uom: 'Kg', threshold: 20, costPerUnit: 30, expiryDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().split('T')[0] },
+  { _id: 'mi-3', name: 'Fresh Tomatoes', category: 'VEGETABLE', quantity: 15, uom: 'Kg', threshold: 10, costPerUnit: 40, expiryDate: new Date(Date.now() + 2*24*60*60*1000).toISOString().split('T')[0] },
+  { _id: 'mi-4', name: 'Fresh Onions', category: 'VEGETABLE', quantity: 60, uom: 'Kg', threshold: 15, costPerUnit: 35, expiryDate: new Date(Date.now() + 10*24*60*60*1000).toISOString().split('T')[0] },
+  { _id: 'mi-5', name: 'Fresh Milk', category: 'DAIRY', quantity: 4, uom: 'Litre', threshold: 10, costPerUnit: 60, expiryDate: new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0] },
+  { _id: 'mi-6', name: 'Refined Sunflower Oil', category: 'GROCERY', quantity: 50, uom: 'Litre', threshold: 15, costPerUnit: 120, expiryDate: '2026-12-31' },
+  { _id: 'mi-7', name: 'Toor Dal (Lentils)', category: 'GROCERY', quantity: 100, uom: 'Kg', threshold: 20, costPerUnit: 140, expiryDate: '2027-01-01' }
+];
+
+const INITIAL_MESS_LOGS = [
+  {
+    _id: 'ml-1',
+    date: new Date(Date.now() - 24*60*60*1000).toISOString(),
+    mealType: 'LUNCH',
+    itemsUsed: [{ item: { _id: 'mi-1', name: 'Basmati Rice', uom: 'Kg' }, qtyUsed: 50 }],
+    spoilage: [{ item: { _id: 'mi-3', name: 'Fresh Tomatoes', uom: 'Kg' }, qtySpoiled: 2, reason: 'Rotted due to heat' }],
+    recordedBy: { name: 'Guest Explorer' }
+  }
+];
+
+const INITIAL_MESS_MENU = [
+  {
+    dayOfWeek: 'Monday',
+    meals: {
+      breakfast: { name: 'Idli & Sambar', ingredients: [{ itemName: 'Toor Dal (Lentils)', perStudentQtyGrams: 20 }] },
+      lunch:     { name: 'Veg Biryani & Curd', ingredients: [{ itemName: 'Basmati Rice', perStudentQtyGrams: 150 }, { itemName: 'Fresh Potatoes', perStudentQtyGrams: 30 }, { itemName: 'Fresh Tomatoes', perStudentQtyGrams: 20 }] },
+      snacks:    { name: 'Tea & Biscuits', ingredients: [{ itemName: 'Fresh Milk', perStudentQtyGrams: 50 }] },
+      dinner:    { name: 'Roti & Potato Curry', ingredients: [{ itemName: 'Fresh Potatoes', perStudentQtyGrams: 80 }, { itemName: 'Fresh Onions', perStudentQtyGrams: 25 }] }
+    }
+  },
+  {
+    dayOfWeek: 'Tuesday',
+    meals: {
+      breakfast: { name: 'Puri Masala', ingredients: [{ itemName: 'Fresh Potatoes', perStudentQtyGrams: 100 }] },
+      lunch:     { name: 'Rice & Sambar', ingredients: [{ itemName: 'Basmati Rice', perStudentQtyGrams: 150 }, { itemName: 'Toor Dal (Lentils)', perStudentQtyGrams: 35 }] },
+      snacks:    { name: 'Milk & Banana', ingredients: [{ itemName: 'Fresh Milk', perStudentQtyGrams: 100 }] },
+      dinner:    { name: 'Rice & Egg Curry', ingredients: [{ itemName: 'Basmati Rice', perStudentQtyGrams: 120 }, { itemName: 'Fresh Onions', perStudentQtyGrams: 20 }] }
+    }
+  },
+  {
+    dayOfWeek: 'Wednesday',
+    meals: {
+      breakfast: { name: 'Dosa & Chutney', ingredients: [] },
+      lunch:     { name: 'Veg Pulao', ingredients: [{ itemName: 'Basmati Rice', perStudentQtyGrams: 140 }, { itemName: 'Fresh Potatoes', perStudentQtyGrams: 25 }, { itemName: 'Fresh Tomatoes', perStudentQtyGrams: 15 }] },
+      snacks:    { name: 'Tea & Pakoda', ingredients: [{ itemName: 'Fresh Milk', perStudentQtyGrams: 50 }] },
+      dinner:    { name: 'Roti & Dal Fry', ingredients: [{ itemName: 'Toor Dal (Lentils)', perStudentQtyGrams: 40 }, { itemName: 'Fresh Onions', perStudentQtyGrams: 15 }] }
+    }
+  },
+  {
+    dayOfWeek: 'Thursday',
+    meals: {
+      breakfast: { name: 'Upma', ingredients: [{ itemName: 'Fresh Onions', perStudentQtyGrams: 15 }] },
+      lunch:     { name: 'Rice & Rasam', ingredients: [{ itemName: 'Basmati Rice', perStudentQtyGrams: 150 }] },
+      snacks:    { name: 'Fruit Salad', ingredients: [] },
+      dinner:    { name: 'Jeera Rice & Dal', ingredients: [{ itemName: 'Basmati Rice', perStudentQtyGrams: 130 }, { itemName: 'Toor Dal (Lentils)', perStudentQtyGrams: 30 }] }
+    }
+  },
+  {
+    dayOfWeek: 'Friday',
+    meals: {
+      breakfast: { name: 'Pongal', ingredients: [] },
+      lunch:     { name: 'Tomato Rice', ingredients: [{ itemName: 'Basmati Rice', perStudentQtyGrams: 140 }, { itemName: 'Fresh Tomatoes', perStudentQtyGrams: 40 }, { itemName: 'Fresh Onions', perStudentQtyGrams: 20 }] },
+      snacks:    { name: 'Tea & Samosa', ingredients: [{ itemName: 'Fresh Milk', perStudentQtyGrams: 50 }] },
+      dinner:    { name: 'Roti & Veg Kurma', ingredients: [{ itemName: 'Fresh Potatoes', perStudentQtyGrams: 50 }, { itemName: 'Fresh Tomatoes', perStudentQtyGrams: 15 }] }
+    }
+  },
+  {
+    dayOfWeek: 'Saturday',
+    meals: {
+      breakfast: { name: 'Bread Toast & Milk', ingredients: [{ itemName: 'Fresh Milk', perStudentQtyGrams: 150 }] },
+      lunch:     { name: 'Rice & Potato Fry', ingredients: [{ itemName: 'Basmati Rice', perStudentQtyGrams: 140 }, { itemName: 'Fresh Potatoes', perStudentQtyGrams: 80 }] },
+      snacks:    { name: 'Tea & Biscuits', ingredients: [{ itemName: 'Fresh Milk', perStudentQtyGrams: 50 }] },
+      dinner:    { name: 'Fried Rice', ingredients: [{ itemName: 'Basmati Rice', perStudentQtyGrams: 130 }, { itemName: 'Fresh Onions', perStudentQtyGrams: 20 }] }
+    }
+  },
+  {
+    dayOfWeek: 'Sunday',
+    meals: {
+      breakfast: { name: 'Aloo Paratha', ingredients: [{ itemName: 'Fresh Potatoes', perStudentQtyGrams: 120 }] },
+      lunch:     { name: 'Special Lunch', ingredients: [{ itemName: 'Basmati Rice', perStudentQtyGrams: 150 }, { itemName: 'Fresh Tomatoes', perStudentQtyGrams: 30 }] },
+      snacks:    { name: 'Coffee & Cookies', ingredients: [{ itemName: 'Fresh Milk', perStudentQtyGrams: 50 }] },
+      dinner:    { name: 'Roti & Dal Tadka', ingredients: [{ itemName: 'Toor Dal (Lentils)', perStudentQtyGrams: 45 }, { itemName: 'Fresh Onions', perStudentQtyGrams: 15 }] }
+    }
+  }
+];
 
 const INITIAL_ITEMS = [
   { _id: 'item-1', segment: 'STATIONERY', itemName: 'A4 Paper Reams (Double A)', dateOfPurchase: '2026-05-10', company: 'Double A', billNo: 'INV-1090', uom: 'Nos', quantityPurchased: 100, unitPrice: 250, totalCost: 25000, shopName: 'Stationery Hub', particulars: 'General Exam Cell usage', quantityDistributed: 40, quantityRemaining: 60 },
@@ -83,6 +175,11 @@ export const initDemoDb = (force = false) => {
     localStorage.setItem(MOCK_VENDORS_KEY, JSON.stringify(INITIAL_VENDORS));
     localStorage.setItem(MOCK_DEPTS_KEY, JSON.stringify(INITIAL_DEPTS));
     localStorage.setItem(MOCK_PARTICULARS_KEY, JSON.stringify(INITIAL_PARTICULARS));
+    localStorage.setItem(MOCK_MESS_ITEMS_KEY, JSON.stringify(INITIAL_MESS_ITEMS));
+    localStorage.setItem(MOCK_MESS_LOGS_KEY, JSON.stringify(INITIAL_MESS_LOGS));
+    localStorage.setItem(MOCK_MESS_MENU_KEY, JSON.stringify(INITIAL_MESS_MENU));
+    localStorage.setItem(MOCK_MESS_PURCHASES_KEY, JSON.stringify([]));
+    localStorage.setItem(MOCK_MESS_SERVED_LOGS_KEY, JSON.stringify([]));
   }
 };
 
@@ -118,12 +215,14 @@ const simulateLatency = (data) => {
 
 export const mockAuthAPI = {
   login: (data) => {
-    const user = { id: 'demo-user-id', name: 'Guest Explorer', email: 'guest@demo.com', role: 'admin' };
     localStorage.setItem('isDemo', 'true');
+    const role = data.email === 'raju@mail.com' ? 'mess' : 'admin';
+    const name = data.email === 'raju@mail.com' ? 'Raju Mess Manager' : 'Guest Explorer';
+    const user = { id: 'demo-user-id', name, email: data.email || 'guest@demo.com', role };
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('token', 'mock-demo-token');
     initDemoDb(true); // reset on login to ensure clean initial experience
-    addAuditLog('LOGIN', 'Guest logged into demo session');
+    addAuditLog('LOGIN', `${name} logged into demo session`);
     return simulateLatency({ token: 'mock-demo-token', user });
   },
   me: () => {
@@ -201,6 +300,13 @@ export const mockItemsAPI = {
     const list = getCollection(MOCK_ITEMS_KEY);
     const idx = list.findIndex(i => i._id === id);
     if (idx !== -1) {
+      const existing = list[idx];
+      const qtyChanged = Number(existing.quantityPurchased) !== Number(data.quantityPurchased);
+      if (qtyChanged) {
+        if (!data.varianceReason || !data.varianceReason.trim()) {
+          return Promise.reject({ response: { data: { message: 'Variance reason is mandatory when adjusting stock quantity.' } } });
+        }
+      }
       list[idx] = {
         ...list[idx],
         ...data,
@@ -209,12 +315,18 @@ export const mockItemsAPI = {
         totalCost: Number(data.totalCost || 0)
       };
       setCollection(MOCK_ITEMS_KEY, list);
-      addAuditLog('ITEM_UPDATE', `Updated item details: ${list[idx].itemName}`);
+      addAuditLog('ITEM_UPDATE', qtyChanged
+        ? `Updated item: ${list[idx].itemName} (Qty adjusted: ${existing.quantityPurchased} -> ${list[idx].quantityPurchased}. Reason: ${data.varianceReason})`
+        : `Updated item details: ${list[idx].itemName}`
+      );
       return simulateLatency(list[idx]);
     }
     return Promise.reject({ response: { data: { message: 'Item not found' } } });
   },
-  delete: (id) => {
+  delete: (id, varianceReason) => {
+    if (!varianceReason || !varianceReason.trim()) {
+      return Promise.reject({ response: { data: { message: 'Reason for deletion is mandatory.' } } });
+    }
     let list = getCollection(MOCK_ITEMS_KEY);
     const itemToDelete = list.find(i => i._id === id);
     list = list.filter(i => i._id !== id);
@@ -226,7 +338,7 @@ export const mockItemsAPI = {
     setCollection(MOCK_DISTS_KEY, dists);
 
     if (itemToDelete) {
-      addAuditLog('ITEM_DELETE', `Deleted item and its logs: ${itemToDelete.itemName}`);
+      addAuditLog('ITEM_DELETE', `Deleted item: ${itemToDelete.itemName}. Reason: ${varianceReason}`);
     }
     return simulateLatency({ message: 'Item deleted' });
   },
@@ -323,7 +435,8 @@ export const mockUsersAPI = {
     return simulateLatency([
       { _id: 'u-1', name: 'Dr. Dhanush K (Admin)', email: 'admin@mail.com', role: 'admin', lastActive: 'Active now' },
       { _id: 'u-2', name: 'Mrs. Lalitha S. (Staff)', email: 'lalitha@mail.com', role: 'staff', lastActive: '2 hours ago' },
-      { _id: 'u-3', name: 'Guest Explorer (Demo)', email: 'guest@demo.com', role: 'admin', lastActive: 'Active now' }
+      { _id: 'u-3', name: 'Guest Explorer (Demo)', email: 'guest@demo.com', role: 'admin', lastActive: 'Active now' },
+      { _id: 'u-4', name: 'Raju Mess Manager (Mess)', email: 'raju@mail.com', role: 'mess', lastActive: '1 day ago' }
     ]);
   },
   create: (data) => simulateLatency({ _id: `u-${Date.now()}`, ...data }),
@@ -469,7 +582,48 @@ export const mockAuditAPI = {
 export const mockAlertsAPI = {
   getActive: () => {
     const alerts = getCollection(MOCK_ALERTS_KEY);
-    return simulateLatency(alerts);
+    // Auto-inject mess-related alerts
+    const messItems = getCollection(MOCK_MESS_ITEMS_KEY);
+    const messAlerts = [];
+    messItems.forEach(item => {
+      if (item.quantity <= 0) {
+        messAlerts.push({
+          _id: `mess-alert-oos-${item._id}`,
+          severity: 'High',
+          issue_type: 'Mess Stockout',
+          message: `🍽️ Mess item "${item.name}" is OUT OF STOCK (0 ${item.uom} remaining).`,
+          recommended_action: `Purchase ${item.threshold * 2} ${item.uom} of ${item.name} from the local supplier immediately.`,
+          action_code: 'AUTO_ORDER',
+          item_id: item._id
+        });
+      } else if (item.quantity <= item.threshold) {
+        messAlerts.push({
+          _id: `mess-alert-low-${item._id}`,
+          severity: 'Medium',
+          issue_type: 'Mess Low Stock',
+          message: `🍽️ Mess item "${item.name}" is running low: ${item.quantity} ${item.uom} remaining (threshold: ${item.threshold}).`,
+          recommended_action: `Restock ${item.name} before the next weekly menu cycle.`,
+          action_code: 'AUDIT',
+          item_id: item._id
+        });
+      }
+      // Expiry alerts
+      if (item.expiryDate) {
+        const daysUntilExpiry = (new Date(item.expiryDate) - new Date()) / (1000 * 60 * 60 * 24);
+        if (daysUntilExpiry >= 0 && daysUntilExpiry <= 3) {
+          messAlerts.push({
+            _id: `mess-alert-exp-${item._id}`,
+            severity: 'High',
+            issue_type: 'Perishable Expiring',
+            message: `⏰ "${item.name}" expires on ${item.expiryDate} — only ${Math.ceil(daysUntilExpiry)} day(s) left! ${item.quantity} ${item.uom} at risk of spoilage.`,
+            recommended_action: `Prioritize using ${item.name} in today's meals or redistribute to avoid waste.`,
+            action_code: 'AUDIT',
+            item_id: item._id
+          });
+        }
+      }
+    });
+    return simulateLatency([...alerts, ...messAlerts]);
   },
   resolve: (id) => {
     let alerts = getCollection(MOCK_ALERTS_KEY);
@@ -622,5 +776,520 @@ export const mockAgentsAPI = {
       `• **High Risk Items**: *Logitech C920 Webcams* (Current: 2 remaining) and *Whiteboard Markers* (Current: 4 remaining) are predicted to face total stockouts in *4 days* and *8 days* respectively under active curriculum distributions.\n\n` +
       `• **Recommendation**: Restock markers and toners now to prevent exam printing delay.`;
     return simulateLatency({ forecast: forecastText });
+  }
+};
+
+export const mockMessAPI = {
+  getItems: () => {
+    return simulateLatency(getCollection(MOCK_MESS_ITEMS_KEY));
+  },
+  createItem: (data) => {
+    const list = getCollection(MOCK_MESS_ITEMS_KEY);
+    const newItem = {
+      ...data,
+      _id: `mi-${Date.now()}`,
+      quantity: Number(data.quantity || 0),
+      threshold: Number(data.threshold || 5),
+      costPerUnit: Number(data.costPerUnit || 0)
+    };
+    list.unshift(newItem);
+    setCollection(MOCK_MESS_ITEMS_KEY, list);
+    addAuditLog('MESS_ITEM_CREATE', `Added mess item: ${newItem.name}`);
+    return simulateLatency(newItem);
+  },
+  updateItem: (id, data) => {
+    const list = getCollection(MOCK_MESS_ITEMS_KEY);
+    const idx = list.findIndex(i => i._id === id);
+    if (idx !== -1) {
+      const existing = list[idx];
+      const qtyChanged = Number(existing.quantity) !== Number(data.quantity);
+      if (qtyChanged) {
+        if (!data.varianceReason || !data.varianceReason.trim()) {
+          return Promise.reject({ response: { data: { message: 'Variance reason is mandatory when adjusting stock quantity.' } } });
+        }
+      }
+      list[idx] = {
+        ...list[idx],
+        ...data,
+        quantity: Number(data.quantity),
+        threshold: Number(data.threshold || 5),
+        costPerUnit: Number(data.costPerUnit || 0)
+      };
+      setCollection(MOCK_MESS_ITEMS_KEY, list);
+      addAuditLog('MESS_ITEM_UPDATE', qtyChanged
+        ? `Updated mess item: ${list[idx].name} (Qty adjusted: ${existing.quantity} -> ${list[idx].quantity}. Reason: ${data.varianceReason})`
+        : `Updated mess item: ${list[idx].name}`
+      );
+      return simulateLatency(list[idx]);
+    }
+    return Promise.reject({ response: { data: { message: 'Item not found' } } });
+  },
+  deleteItem: (id, varianceReason) => {
+    if (!varianceReason || !varianceReason.trim()) {
+      return Promise.reject({ response: { data: { message: 'Reason for deletion is mandatory.' } } });
+    }
+    let list = getCollection(MOCK_MESS_ITEMS_KEY);
+    const itemToDelete = list.find(i => i._id === id);
+    list = list.filter(i => i._id !== id);
+    setCollection(MOCK_MESS_ITEMS_KEY, list);
+    if (itemToDelete) {
+      addAuditLog('MESS_ITEM_DELETE', `Deleted mess item: ${itemToDelete.name}. Reason: ${varianceReason}`);
+    }
+    return simulateLatency({ message: 'Deleted successfully' });
+  },
+  logConsumption: (data) => {
+    const { mealType, itemsUsed = [], spoilage = [], date, issuedBy, issuedTo, purposeOfUsed, particulars } = data;
+    const items = getCollection(MOCK_MESS_ITEMS_KEY);
+
+    // Validate stocks
+    for (const u of itemsUsed) {
+      const match = items.find(i => i._id === u.item);
+      if (!match) return Promise.reject({ response: { data: { message: 'Item not found' } } });
+      if (match.quantity < u.qtyUsed) {
+        return Promise.reject({ response: { data: { message: `Insufficient stock for ${match.name}! Available: ${match.quantity}, Requested: ${u.qtyUsed}` } } });
+      }
+    }
+    for (const s of spoilage) {
+      const match = items.find(i => i._id === s.item);
+      if (!match) return Promise.reject({ response: { data: { message: 'Item not found' } } });
+      if (match.quantity < s.qtySpoiled) {
+        return Promise.reject({ response: { data: { message: `Insufficient stock to waste for ${match.name}! Available: ${match.quantity}, Requested: ${s.qtySpoiled}` } } });
+      }
+    }
+
+    // Deduct stock
+    itemsUsed.forEach(u => {
+      const idx = items.findIndex(i => i._id === u.item);
+      if (idx !== -1) items[idx].quantity -= Number(u.qtyUsed);
+    });
+    spoilage.forEach(s => {
+      const idx = items.findIndex(i => i._id === s.item);
+      if (idx !== -1) items[idx].quantity -= Number(s.qtySpoiled);
+    });
+    setCollection(MOCK_MESS_ITEMS_KEY, items);
+
+    // Save log
+    const logs = getCollection(MOCK_MESS_LOGS_KEY);
+    const populatedItemsUsed = itemsUsed.map(u => {
+      const item = items.find(i => i._id === u.item);
+      return { item: { _id: u.item, name: item?.name, uom: item?.uom, category: item?.category }, qtyUsed: u.qtyUsed };
+    });
+    const populatedSpoilage = spoilage.map(s => {
+      const item = items.find(i => i._id === s.item);
+      return { item: { _id: s.item, name: item?.name, uom: item?.uom, category: item?.category }, qtySpoiled: s.qtySpoiled, reason: s.reason };
+    });
+
+    const newLog = {
+      _id: `ml-${Date.now()}`,
+      date: date || new Date().toISOString(),
+      mealType,
+      itemsUsed: populatedItemsUsed,
+      spoilage: populatedSpoilage,
+      issuedBy,
+      issuedTo,
+      purposeOfUsed,
+      particulars,
+      recordedBy: { name: 'Guest Explorer' }
+    };
+    logs.unshift(newLog);
+    setCollection(MOCK_MESS_LOGS_KEY, logs);
+    addAuditLog('MESS_CONSUME', `Logged consumption/spoilage for meal: ${mealType}`);
+    return simulateLatency(newLog);
+  },
+  getConsumptionLogs: () => {
+    return simulateLatency(getCollection(MOCK_MESS_LOGS_KEY));
+  },
+  getPurchases: () => {
+    return simulateLatency(getCollection(MOCK_MESS_PURCHASES_KEY));
+  },
+  createPurchase: (data) => {
+    const list = getCollection(MOCK_MESS_PURCHASES_KEY);
+    const items = getCollection(MOCK_MESS_ITEMS_KEY);
+    const { item: itemId, purchaseDate, billNo, company, uom, quantityPurchased, unitPrice, shopName, particulars } = data;
+
+    const matchIdx = items.findIndex(i => i._id === itemId);
+    if (matchIdx !== -1) {
+      items[matchIdx].quantity += Number(quantityPurchased);
+      setCollection(MOCK_MESS_ITEMS_KEY, items);
+    }
+
+    const matchedItem = items.find(i => i._id === itemId);
+
+    const newPurchase = {
+      _id: `mp-${Date.now()}`,
+      item: { _id: itemId, name: matchedItem?.name || 'Unknown Item', category: matchedItem?.category || 'OTHER', uom: matchedItem?.uom || uom },
+      purchaseDate: purchaseDate || new Date().toISOString(),
+      billNo,
+      company,
+      uom,
+      quantityPurchased: Number(quantityPurchased),
+      unitPrice: Number(unitPrice),
+      totalCost: Number(quantityPurchased) * Number(unitPrice),
+      shopName,
+      particulars,
+      recordedBy: { name: 'Guest Explorer', email: 'guest@nirvahana.com' }
+    };
+
+    list.unshift(newPurchase);
+    setCollection(MOCK_MESS_PURCHASES_KEY, list);
+    addAuditLog('MESS_PURCHASE', `Purchased ${quantityPurchased} ${uom} of ${matchedItem?.name || itemId}`);
+    return simulateLatency(newPurchase);
+  },
+  deletePurchase: (id) => {
+    let list = getCollection(MOCK_MESS_PURCHASES_KEY);
+    const purchase = list.find(p => p._id === id);
+    if (!purchase) return Promise.reject({ response: { data: { message: 'Purchase not found' } } });
+
+    // Decrement stock
+    const items = getCollection(MOCK_MESS_ITEMS_KEY);
+    const itemId = purchase.item._id || purchase.item;
+    const matchIdx = items.findIndex(i => i._id === itemId);
+    if (matchIdx !== -1) {
+      items[matchIdx].quantity -= Number(purchase.quantityPurchased);
+      setCollection(MOCK_MESS_ITEMS_KEY, items);
+    }
+
+    list = list.filter(p => p._id !== id);
+    setCollection(MOCK_MESS_PURCHASES_KEY, list);
+    addAuditLog('MESS_PURCHASE_DELETE', `Deleted purchase and reverted stock`);
+    return simulateLatency({ message: 'Purchase deleted' });
+  },
+  getServedLogs: () => {
+    return simulateLatency(getCollection(MOCK_MESS_SERVED_LOGS_KEY));
+  },
+  createServedLog: (data) => {
+    const list = getCollection(MOCK_MESS_SERVED_LOGS_KEY);
+    const total = (Number(data.boysHostel) || 0) +
+                  (Number(data.girlsHostel) || 0) +
+                  (Number(data.externals) || 0) +
+                  (Number(data.trainers) || 0) +
+                  (Number(data.guestsFaculty) || 0) +
+                  (Number(data.staffWardens) || 0) +
+                  (Number(data.others) || 0);
+
+    const newLog = {
+      ...data,
+      _id: `msl-${Date.now()}`,
+      date: data.date || new Date().toISOString(),
+      boysHostel: Number(data.boysHostel) || 0,
+      girlsHostel: Number(data.girlsHostel) || 0,
+      externals: Number(data.externals) || 0,
+      trainers: Number(data.trainers) || 0,
+      guestsFaculty: Number(data.guestsFaculty) || 0,
+      staffWardens: Number(data.staffWardens) || 0,
+      others: Number(data.others) || 0,
+      total,
+      recordedBy: { name: 'Guest Explorer', email: 'guest@nirvahana.com' }
+    };
+
+    list.unshift(newLog);
+    setCollection(MOCK_MESS_SERVED_LOGS_KEY, list);
+    addAuditLog('MESS_SERVED_LOG', `Logged served meal: ${data.itemsNames} (${data.mealType})`);
+    return simulateLatency(newLog);
+  },
+  deleteServedLog: (id) => {
+    let list = getCollection(MOCK_MESS_SERVED_LOGS_KEY);
+    list = list.filter(l => l._id !== id);
+    setCollection(MOCK_MESS_SERVED_LOGS_KEY, list);
+    addAuditLog('MESS_SERVED_LOG_DELETE', `Deleted served meal log`);
+    return simulateLatency({ message: 'Deleted successfully' });
+  },
+  getMenu: () => {
+    return simulateLatency(getCollection(MOCK_MESS_MENU_KEY));
+  },
+  updateMenuDay: (day, data) => {
+    const list = getCollection(MOCK_MESS_MENU_KEY);
+    const idx = list.findIndex(m => m.dayOfWeek === day);
+    if (idx !== -1) {
+      list[idx].meals = data.meals;
+      setCollection(MOCK_MESS_MENU_KEY, list);
+      return simulateLatency(list[idx]);
+    }
+    const newDay = { dayOfWeek: day, meals: data.meals };
+    list.push(newDay);
+    setCollection(MOCK_MESS_MENU_KEY, list);
+    return simulateLatency(newDay);
+  },
+  getForecast: (students = 100) => {
+    const menu = getCollection(MOCK_MESS_MENU_KEY);
+    const items = getCollection(MOCK_MESS_ITEMS_KEY);
+
+    const demandGrams = {};
+    menu.forEach(day => {
+      ['breakfast', 'lunch', 'snacks', 'dinner'].forEach(mealKey => {
+        const meal = day.meals?.[mealKey];
+        if (meal?.ingredients) {
+          meal.ingredients.forEach(ing => {
+            const nameLower = ing.itemName.trim().toLowerCase();
+            demandGrams[nameLower] = (demandGrams[nameLower] || 0) + (ing.perStudentQtyGrams * students);
+          });
+        }
+      });
+    });
+
+    const forecastResults = [];
+    for (const [ingNameLower, totalGrams] of Object.entries(demandGrams)) {
+      const requiredKg = totalGrams / 1000;
+      const match = items.find(it => it.name.trim().toLowerCase() === ingNameLower);
+      const currentStock = match ? match.quantity : 0;
+      const uom = match ? match.uom : 'Kg';
+      const shortage = Math.max(0, requiredKg - currentStock);
+
+      forecastResults.push({
+        name: match ? match.name : ingNameLower.toUpperCase(),
+        category: match ? match.category : 'OTHER',
+        required: requiredKg,
+        currentStock,
+        uom,
+        shortage,
+        estimatedCost: shortage * (match ? match.costPerUnit : 50),
+        vendor: match ? { name: 'Local Supplier', email: 'supplier@mail.com', phone: '+919998887776' } : null
+      });
+    }
+
+    return simulateLatency(forecastResults);
+  },
+  bulkImportItems: (data) => {
+    const list = getCollection(MOCK_MESS_ITEMS_KEY);
+    let imported = 0;
+    let failed = 0;
+    const errors = [];
+
+    data.forEach((row, i) => {
+      try {
+        const name = (row.name || '').toString().trim();
+        if (!name) throw new Error('Item name is required');
+
+        const category = (row.category || 'OTHER').toString().toUpperCase().trim();
+        const quantity = parseFloat(row.quantity) || 0;
+        const uom = (row.uom || 'Kg').toString().trim();
+        const threshold = parseFloat(row.threshold) || 5;
+        const costPerUnit = parseFloat(row.costPerUnit) || 0;
+        const nameTelugu = (row.nameTelugu || '').toString().trim() || undefined;
+        const packingQuantity = parseFloat(row.packingQuantity) || 0;
+        const dateOfVerified = row.dateOfVerified || undefined;
+        const expiryDate = row.expiryDate || undefined;
+
+        const idx = list.findIndex(item => item.name.toLowerCase() === name.toLowerCase());
+        if (idx !== -1) {
+          list[idx].quantity += quantity;
+          if (nameTelugu) list[idx].nameTelugu = nameTelugu;
+          if (packingQuantity) list[idx].packingQuantity = packingQuantity;
+          if (dateOfVerified) list[idx].dateOfVerified = dateOfVerified;
+          if (expiryDate) list[idx].expiryDate = expiryDate;
+          if (costPerUnit) list[idx].costPerUnit = costPerUnit;
+        } else {
+          list.unshift({
+            _id: `mi-${Date.now()}-${i}`,
+            name,
+            nameTelugu,
+            category,
+            quantity,
+            uom,
+            threshold,
+            costPerUnit,
+            packingQuantity,
+            dateOfVerified,
+            expiryDate
+          });
+        }
+        imported++;
+      } catch (err) {
+        failed++;
+        errors.push({ row: i + 1, itemName: row.name || '—', reason: err.message });
+      }
+    });
+
+    setCollection(MOCK_MESS_ITEMS_KEY, list);
+    addAuditLog('MESS_BULK_ITEMS', `Imported ${imported} items in batch`);
+    return simulateLatency({ imported, failed, errors });
+  },
+  bulkImportPurchases: (data) => {
+    const list = getCollection(MOCK_MESS_PURCHASES_KEY);
+    const items = getCollection(MOCK_MESS_ITEMS_KEY);
+    let imported = 0;
+    let failed = 0;
+    const errors = [];
+
+    data.forEach((row, i) => {
+      try {
+        const itemName = (row.itemName || '').toString().trim();
+        if (!itemName) throw new Error('Item Name is required');
+
+        const quantityPurchased = parseFloat(row.quantityPurchased) || 0;
+        if (quantityPurchased <= 0) throw new Error('Quantity purchased must be greater than 0');
+
+        const uom = (row.uom || 'Kg').toString().trim();
+        const unitPrice = parseFloat(row.unitPrice) || 0;
+        const purchaseDate = row.purchaseDate || new Date().toISOString();
+        const billNo = (row.billNo || '').toString().trim() || undefined;
+        const company = (row.company || '').toString().trim() || undefined;
+        const shopName = (row.shopName || '').toString().trim() || undefined;
+        const particulars = (row.particulars || '').toString().trim() || undefined;
+
+        let itemDoc = items.find(it => it.name.toLowerCase() === itemName.toLowerCase());
+        if (!itemDoc) {
+          itemDoc = {
+            _id: `mi-${Date.now()}-${i}`,
+            name: itemName,
+            category: 'OTHER',
+            quantity: 0,
+            uom,
+            threshold: 5
+          };
+          items.unshift(itemDoc);
+        }
+
+        itemDoc.quantity += quantityPurchased;
+
+        const newPurchase = {
+          _id: `mp-${Date.now()}-${i}`,
+          item: { _id: itemDoc._id, name: itemDoc.name, category: itemDoc.category, uom: itemDoc.uom },
+          purchaseDate,
+          billNo,
+          company,
+          uom,
+          quantityPurchased,
+          unitPrice,
+          totalCost: quantityPurchased * unitPrice,
+          shopName,
+          particulars,
+          recordedBy: { name: 'Guest Explorer', email: 'guest@nirvahana.com' }
+        };
+
+        list.unshift(newPurchase);
+        imported++;
+      } catch (err) {
+        failed++;
+        errors.push({ row: i + 1, itemName: row.itemName || '—', reason: err.message });
+      }
+    });
+
+    setCollection(MOCK_MESS_ITEMS_KEY, items);
+    setCollection(MOCK_MESS_PURCHASES_KEY, list);
+    addAuditLog('MESS_BULK_PURCHASE', `Imported ${imported} purchases in batch`);
+    return simulateLatency({ imported, failed, errors });
+  },
+  bulkImportConsumption: (data) => {
+    const list = getCollection(MOCK_MESS_LOGS_KEY);
+    const items = getCollection(MOCK_MESS_ITEMS_KEY);
+    let imported = 0;
+    let failed = 0;
+    const errors = [];
+
+    data.forEach((row, i) => {
+      try {
+        const itemName = (row.itemName || '').toString().trim();
+        if (!itemName) throw new Error('Item Name is required');
+
+        const qtyUsed = parseFloat(row.qtyUsed) || 0;
+        const qtySpoiled = parseFloat(row.qtySpoiled) || 0;
+        if (qtyUsed <= 0 && qtySpoiled <= 0) throw new Error('Quantity used/spoiled must be greater than 0');
+
+        const date = row.date || new Date().toISOString();
+        const mealType = (row.mealType || 'GENERAL').toString().toUpperCase().trim();
+        const reason = (row.reason || '').toString().trim() || undefined;
+        const issuedBy = (row.issuedBy || '').toString().trim() || undefined;
+        const issuedTo = (row.issuedTo || '').toString().trim() || undefined;
+        const purposeOfUsed = (row.purposeOfUsed || '').toString().trim() || undefined;
+        const particulars = (row.particulars || '').toString().trim() || undefined;
+        const uom = (row.uom || 'Kg').toString().trim();
+
+        let itemDoc = items.find(it => it.name.toLowerCase() === itemName.toLowerCase());
+        if (!itemDoc) {
+          itemDoc = {
+            _id: `mi-${Date.now()}-${i}`,
+            name: itemName,
+            category: 'OTHER',
+            quantity: 0,
+            uom: uom,
+            threshold: 5
+          };
+          items.unshift(itemDoc);
+        }
+
+        itemDoc.quantity -= (qtyUsed + qtySpoiled);
+
+        const itemsUsed = qtyUsed > 0 ? [{ item: { _id: itemDoc._id, name: itemDoc.name, uom: itemDoc.uom, category: itemDoc.category }, qtyUsed }] : [];
+        const spoilage = qtySpoiled > 0 ? [{ item: { _id: itemDoc._id, name: itemDoc.name, uom: itemDoc.uom, category: itemDoc.category }, qtySpoiled, reason }] : [];
+
+        const newLog = {
+          _id: `ml-${Date.now()}-${i}`,
+          date,
+          mealType,
+          itemsUsed,
+          spoilage,
+          issuedBy,
+          issuedTo,
+          purposeOfUsed,
+          particulars,
+          recordedBy: { name: 'Guest Explorer' }
+        };
+        list.unshift(newLog);
+        imported++;
+      } catch (err) {
+        failed++;
+        errors.push({ row: i + 1, itemName: row.itemName || '—', reason: err.message });
+      }
+    });
+
+    setCollection(MOCK_MESS_ITEMS_KEY, items);
+    setCollection(MOCK_MESS_LOGS_KEY, list);
+    addAuditLog('MESS_BULK_CONSUME', `Imported ${imported} consumption logs in batch`);
+    return simulateLatency({ imported, failed, errors });
+  },
+  bulkImportServedLogs: (data) => {
+    const list = getCollection(MOCK_MESS_SERVED_LOGS_KEY);
+    let imported = 0;
+    let failed = 0;
+    const errors = [];
+
+    data.forEach((row, i) => {
+      try {
+        const itemsNames = (row.itemsNames || '').toString().trim();
+        if (!itemsNames) throw new Error('Items served names are required');
+
+        const date = row.date || new Date().toISOString();
+        const mealType = (row.mealType || 'LUNCH').toString().toUpperCase().trim();
+        const foodLeftOver = (row.foodLeftOver || '').toString().trim() || undefined;
+        const feedback = (row.feedback || '').toString().trim() || undefined;
+
+        const boysHostel = parseInt(row.boysHostel) || 0;
+        const girlsHostel = parseInt(row.girlsHostel) || 0;
+        const externals = parseInt(row.externals) || 0;
+        const trainers = parseInt(row.trainers) || 0;
+        const guestsFaculty = parseInt(row.guestsFaculty) || 0;
+        const staffWardens = parseInt(row.staffWardens) || 0;
+        const others = parseInt(row.others) || 0;
+        const total = boysHostel + girlsHostel + externals + trainers + guestsFaculty + staffWardens + others;
+
+        const newLog = {
+          _id: `msl-${Date.now()}-${i}`,
+          date,
+          mealType,
+          itemsNames,
+          foodLeftOver,
+          feedback,
+          boysHostel,
+          girlsHostel,
+          externals,
+          trainers,
+          guestsFaculty,
+          staffWardens,
+          others,
+          total,
+          recordedBy: { name: 'Guest Explorer', email: 'guest@nirvahana.com' }
+        };
+        list.unshift(newLog);
+        imported++;
+      } catch (err) {
+        failed++;
+        errors.push({ row: i + 1, itemName: row.itemsNames || '—', reason: err.message });
+      }
+    });
+
+    setCollection(MOCK_MESS_SERVED_LOGS_KEY, list);
+    addAuditLog('MESS_BULK_SERVED', `Imported ${imported} served meal logs in batch`);
+    return simulateLatency({ imported, failed, errors });
   }
 };
