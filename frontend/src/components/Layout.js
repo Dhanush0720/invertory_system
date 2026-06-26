@@ -1,17 +1,17 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LOGO_PATH, COLLEGE_NAME, COLLEGE_SUB } from '../config/logo';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function LogoImage() {
   const [err, setErr] = useState(false);
   if (err) return (
     <div style={{
       width: 48, height: 48, borderRadius: 12, marginBottom: 14,
-      background: 'linear-gradient(135deg, rgba(249,115,22,0.2), rgba(249,115,22,0.05))',
-      border: '1px solid rgba(249,115,22,0.25)',
+      background: 'var(--accent-subtle)',
+      border: '1px solid var(--border)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 24, boxShadow: '0 4px 16px rgba(249,115,22,0.15)'
+      fontSize: 24, boxShadow: '0 4px 12px var(--accent-glow)'
     }}>🏛️</div>
   );
   return (
@@ -41,6 +41,17 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(localStorage.getItem('sidebarCollapsed') === 'true');
+
+  useEffect(() => {
+    document.body.className = theme;
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', sidebarCollapsed);
+  }, [sidebarCollapsed]);
 
   const handleLogout = () => { logout(); navigate('/login'); };
   const isDemoActive = localStorage.getItem('isDemo') === 'true';
@@ -62,26 +73,48 @@ export default function Layout() {
     : adminItems;
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-  const roleColors = { admin: '#f97316', staff: '#60a5fa', viewer: '#a78bfa' };
-  const roleColor = roleColors[user?.role] || '#94a3b8';
+  const roleColors = { admin: 'var(--accent)', staff: 'var(--info)', viewer: 'var(--purple)' };
+  const roleColor = roleColors[user?.role] || 'var(--text3)';
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${sidebarCollapsed ? 'collapsed' : ''}`}>
       <aside className={`sidebar ${mobileMenuOpen ? 'sidebar-open' : ''}`}>
 
         {/* Logo Block */}
         <div className="sidebar-logo">
-          <LogoImage />
-          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#eef2ff', lineHeight: 1.4, letterSpacing: '-0.2px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <LogoImage />
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text3)',
+                cursor: 'pointer',
+                fontSize: 15,
+                padding: '6px',
+                borderRadius: 'var(--radius-sm)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all var(--transition)'
+              }}
+              className="collapse-toggle-btn"
+              title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+              {sidebarCollapsed ? '➔' : '⇠'}
+            </button>
+          </div>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', lineHeight: 1.4, letterSpacing: '-0.2px' }}>
             {COLLEGE_NAME}
           </h2>
-          <p style={{ fontSize: 10, color: '#4a5280', marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 500 }}>
+          <p className="sidebar-subtitle" style={{ fontSize: 10, color: 'var(--text3)', marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 500 }}>
             {COLLEGE_SUB}
           </p>
           {/* Status dot */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10d96e', boxShadow: '0 0 6px #10d96e', animation: 'spin 2s linear infinite', animationName: 'none', flexShrink: 0 }} />
-            <span style={{ fontSize: 10, color: '#4a5280', letterSpacing: '0.5px' }}>System Online</span>
+          <div className="system-status" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 6px var(--success)', flexShrink: 0 }} />
+            <span style={{ fontSize: 10, color: 'var(--text3)', letterSpacing: '0.5px' }}>System Online</span>
           </div>
         </div>
 
@@ -95,9 +128,10 @@ export default function Layout() {
               end={item.exact}
               className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
               onClick={() => setMobileMenuOpen(false)}
+              title={sidebarCollapsed ? item.label : ""}
             >
-              <span style={{ fontSize: 18 }}>{item.emoji}</span>
-              <div style={{ flex: 1 }}>
+              <span style={{ fontSize: 18 }} className="icon">{item.emoji}</span>
+              <div style={{ flex: 1 }} className="nav-text">
                 <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.2 }}>{item.label}</div>
                 <div style={{ fontSize: 10, opacity: 0.6, marginTop: 1, fontWeight: 400 }}>{item.desc}</div>
               </div>
@@ -113,9 +147,10 @@ export default function Layout() {
                   to={item.to}
                   className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                   onClick={() => setMobileMenuOpen(false)}
+                  title={sidebarCollapsed ? item.label : ""}
                 >
-                  <span style={{ fontSize: 18 }}>{item.emoji}</span>
-                  <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: 18 }} className="icon">{item.emoji}</span>
+                  <div style={{ flex: 1 }} className="nav-text">
                     <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.2 }}>{item.label}</div>
                     <div style={{ fontSize: 10, opacity: 0.6, marginTop: 1, fontWeight: 400 }}>{item.desc}</div>
                   </div>
@@ -128,9 +163,9 @@ export default function Layout() {
         {/* Footer — User Card */}
         <div className="sidebar-footer">
           {/* Version Tag */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, padding: '0 2px' }}>
-            <span style={{ fontSize: 10, color: '#4a5280', letterSpacing: '0.5px' }}>ESTATE MANAGER</span>
-            <span style={{ fontSize: 10, background: 'rgba(249,115,22,0.1)', color: '#f97316', padding: '2px 7px', borderRadius: 20, border: '1px solid rgba(249,115,22,0.2)', fontWeight: 600 }}>v2.0</span>
+          <div className="version-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, padding: '0 2px', width: '100%' }}>
+            <span style={{ fontSize: 10, color: 'var(--text3)', letterSpacing: '0.5px' }}>ESTATE MANAGER</span>
+            <span style={{ fontSize: 10, background: 'var(--accent-subtle)', color: 'var(--accent)', padding: '2px 7px', borderRadius: 20, border: '1px solid var(--border)', fontWeight: 600 }}>v2.0</span>
           </div>
 
           <div className="user-card">
@@ -139,12 +174,30 @@ export default function Layout() {
               <div className="name">{user?.name}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
                 <div style={{ width: 5, height: 5, borderRadius: '50%', background: roleColor, boxShadow: `0 0 4px ${roleColor}` }} />
-                <span style={{ fontSize: 11, color: '#7c85b0', textTransform: 'capitalize', fontWeight: 500 }}>{user?.role}</span>
+                <span style={{ fontSize: 11, color: 'var(--text3)', textTransform: 'capitalize', fontWeight: 500 }}>{user?.role}</span>
               </div>
             </div>
-            <button className="logout-btn" onClick={handleLogout} title="Logout">
-              ⏻
-            </button>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }} className="footer-actions">
+              <button
+                type="button"
+                className="theme-toggle-btn"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                style={{
+                  background: 'none', border: 'none',
+                  color: 'var(--text3)', cursor: 'pointer',
+                  fontSize: 14, padding: '6px',
+                  borderRadius: 'var(--radius-sm)',
+                  transition: 'all var(--transition)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+                title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              >
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
+              <button className="logout-btn" onClick={handleLogout} title="Logout" style={{ padding: '6px' }}>
+                ⏻
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -155,15 +208,15 @@ export default function Layout() {
           <button className="hamburger" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             <span></span><span></span><span></span>
           </button>
-          <div style={{ fontSize: 13, color: '#7c85b0', fontWeight: 500 }}>
+          <div style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 500 }}>
             College Inventory
           </div>
         </div>
 
         {isDemoActive && (
           <div style={{
-            background: 'linear-gradient(90deg, rgba(249,115,22,0.12), rgba(168,85,247,0.08))',
-            borderBottom: '1px solid rgba(249,115,22,0.2)',
+            background: 'linear-gradient(90deg, var(--accent-subtle), transparent)',
+            borderBottom: '1px solid var(--border)',
             padding: '10px 24px',
             display: 'flex',
             alignItems: 'center',
@@ -174,16 +227,16 @@ export default function Layout() {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{
-                background: 'rgba(249,115,22,0.2)',
-                border: '1px solid rgba(249,115,22,0.4)',
-                color: '#fb923c',
+                background: 'var(--accent-glow)',
+                border: '1px solid var(--accent)',
+                color: 'var(--accent-hover)',
                 fontSize: 10,
                 fontWeight: 800,
                 padding: '2px 8px',
                 borderRadius: 20,
                 letterSpacing: '0.5px'
               }}>🧪 DEMO MODE</span>
-              <span style={{ fontSize: 12.5, color: '#cbd5e1', fontWeight: 500 }}>
+              <span style={{ fontSize: 12.5, color: 'var(--text2)', fontWeight: 500 }}>
                 You are exploring as a guest. All operations are running client-side with <strong>localStorage</strong> database simulation.
               </span>
             </div>
@@ -191,15 +244,15 @@ export default function Layout() {
               onClick={handleResetDemo}
               style={{
                 background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                color: '#eef2ff',
+                border: '1px solid var(--border)',
+                color: 'var(--text)',
                 fontSize: 11,
                 fontWeight: 600,
                 padding: '5px 12px',
                 borderRadius: 8,
                 cursor: 'pointer',
                 transition: 'all 0.2s',
-                fontFamily: 'Space Grotesk, sans-serif'
+                fontFamily: 'var(--font-heading)'
               }}
               onMouseOver={e => e.currentTarget.style.background = 'rgba(240,64,64,0.15)'}
               onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}

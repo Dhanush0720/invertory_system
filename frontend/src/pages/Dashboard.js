@@ -30,16 +30,15 @@ const QUICK_FILTERS = [
   { label: '💰 High Value',   key: 'highvalue'  },
 ];
 
-// ── Custom tooltip for currency charts
 function CurrencyTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: '#1a2236', border: '1px solid #2a3550', borderRadius: 10, padding: '10px 14px', fontSize: 13 }}>
-      <p style={{ fontWeight: 700, color: '#f1f5f9', marginBottom: 6 }}>{label}</p>
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 13 }}>
+      <p style={{ fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>{label}</p>
       {payload.map((p, i) => {
         const isCurrency = p.name.toLowerCase().includes('amount') || p.name.toLowerCase().includes('cost') || p.name.toLowerCase().includes('value');
         return (
-          <p key={i} style={{ color: p.fill || p.stroke || '#f97316', marginBottom: 2 }}>
+          <p key={i} style={{ color: p.fill || p.stroke || 'var(--accent)', marginBottom: 2 }}>
             {p.name}: <strong>{isCurrency ? fmtFull(p.value) : Number(p.value).toLocaleString('en-IN')}</strong>
           </p>
         );
@@ -228,12 +227,12 @@ export default function Dashboard() {
       </div>
 
       {/* ── NIRVAHANA FINANCIAL FORECASTER ── */}
-      <div className="card" style={{ marginBottom: 24, background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(15, 23, 42, 1))', borderColor: 'rgba(168, 85, 247, 0.3)' }}>
+      <div className="card" style={{ marginBottom: 24, background: 'var(--forecast-bg)', borderColor: 'var(--forecast-border)' }}>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(168, 85, 247, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, boxShadow: '0 0 16px rgba(168,85,247,0.3)' }}>🔮</div>
+          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(168, 85, 247, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, boxShadow: '0 0 16px rgba(168,85,247,0.2)' }}>🔮</div>
           <div style={{ flex: 1 }}>
-            <h3 style={{ fontSize: 16, color: '#e2e8f0', margin: 0, fontFamily: 'Syne, sans-serif' }}>Nirvahana 30-Day Budget Forecast</h3>
-            <p style={{ fontSize: 13, color: '#cbd5e1', marginTop: 8, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{forecast || "Calculating projections based on historical velocity..."}</p>
+            <h3 style={{ fontSize: 16, color: 'var(--forecast-text)', margin: 0, fontFamily: 'Syne, sans-serif' }}>Nirvahana 30-Day Budget Forecast</h3>
+            <p style={{ fontSize: 13, color: 'var(--forecast-text2)', marginTop: 8, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{forecast || "Calculating projections based on historical velocity..."}</p>
           </div>
         </div>
       </div>
@@ -273,9 +272,9 @@ export default function Dashboard() {
                 <ResponsiveContainer width="100%" height={320}>
                   <BarChart data={segCostData} margin={{ top: 4, right: 8, bottom: 60, left: 10 }}
                     onClick={e => e?.activeLabel && setSelectedCategory(prev => prev === e.activePayload?.[0]?.payload?.fullName ? null : e.activePayload?.[0]?.payload?.fullName)}>
-                    <XAxis dataKey="category" tick={{ fill: '#94a3b8', fontSize: 10 }} angle={-40} textAnchor="end" interval={0} />
-                    <YAxis tickFormatter={fmt} tick={{ fill: '#94a3b8', fontSize: 10 }} width={52} />
-                    <Tooltip content={<CurrencyTooltip />} cursor={{ fill: 'rgba(249,115,22,0.06)' }} />
+                    <XAxis dataKey="category" tick={{ fill: 'var(--text3)', fontSize: 10 }} angle={-40} textAnchor="end" interval={0} />
+                    <YAxis tickFormatter={fmt} tick={{ fill: 'var(--text3)', fontSize: 10 }} width={52} />
+                    <Tooltip content={<CurrencyTooltip />} cursor={{ fill: 'var(--accent-glow)' }} />
                     <Bar dataKey="totalCost" name="Purchase Amount" radius={[4,4,0,0]} maxBarSize={36}>
                       {segCostData.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
                     </Bar>
@@ -290,7 +289,7 @@ export default function Dashboard() {
                     <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={110} label={({ name, percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''} labelLine={false} fontSize={11}>
                       {pieData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                     </Pie>
-                    <Tooltip formatter={(v) => fmtFull(v)} contentStyle={{ background: '#1a2236', border: '1px solid #2a3550', borderRadius: 8, fontSize: 12, color: '#eef2ff' }} itemStyle={{ color: '#eef2ff' }} labelStyle={{ color: '#eef2ff' }} />
+                    <Tooltip formatter={(v) => fmtFull(v)} contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, color: 'var(--text)' }} itemStyle={{ color: 'var(--text)' }} labelStyle={{ color: 'var(--text)' }} />
                     <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
                   </PieChart>
                 </ResponsiveContainer>
@@ -333,9 +332,9 @@ export default function Dashboard() {
               {/* Horizontal bar chart */}
               <ResponsiveContainer width="100%" height={420}>
                 <BarChart data={itemCostData} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 10 }}>
-                  <XAxis type="number" tickFormatter={fmt} tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                  <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} width={130} />
-                  <Tooltip content={<CurrencyTooltip />} cursor={{ fill: 'rgba(249,115,22,0.06)' }} />
+                  <XAxis type="number" tickFormatter={fmt} tick={{ fill: 'var(--text3)', fontSize: 10 }} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: 'var(--text3)', fontSize: 10 }} width={130} />
+                  <Tooltip content={<CurrencyTooltip />} cursor={{ fill: 'var(--accent-glow)' }} />
                   <Bar dataKey="totalCost" name="Purchase Amount" radius={[0,4,4,0]} maxBarSize={20}>
                     {itemCostData.map((d, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
                   </Bar>
@@ -381,10 +380,10 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={monthlyData} margin={{ top: 4, right: 24, bottom: 4, left: 10 }}>
                   <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                  <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-                  <YAxis tickFormatter={fmt} tick={{ fill: '#94a3b8', fontSize: 11 }} width={52} />
+                  <XAxis dataKey="month" tick={{ fill: 'var(--text3)', fontSize: 11 }} />
+                  <YAxis tickFormatter={fmt} tick={{ fill: 'var(--text3)', fontSize: 11 }} width={52} />
                   <Tooltip content={<CurrencyTooltip />} />
-                  <Line type="monotone" dataKey="totalCost" name="Purchase Amount" stroke="#f97316" strokeWidth={2.5} dot={{ fill: '#f97316', r: 4 }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="totalCost" name="Purchase Amount" stroke="var(--accent)" strokeWidth={2.5} dot={{ fill: 'var(--accent)', r: 4 }} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -404,9 +403,9 @@ export default function Dashboard() {
                   <ResponsiveContainer width="100%" height={320}>
                     <BarChart data={stats.departmentBreakdown.slice(0, 15)} margin={{ top: 4, right: 8, bottom: 80, left: 10 }}
                       onClick={e => e?.activeLabel && setSelectedDepartment(prev => prev === e.activePayload?.[0]?.payload?.department ? null : e.activePayload?.[0]?.payload?.department)}>
-                      <XAxis dataKey="department" tick={{ fill: '#94a3b8', fontSize: 10 }} angle={-40} textAnchor="end" interval={0} />
-                      <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} width={42} />
-                      <Tooltip content={<CurrencyTooltip />} cursor={{ fill: 'rgba(249,115,22,0.06)' }} />
+                      <XAxis dataKey="department" tick={{ fill: 'var(--text3)', fontSize: 10 }} angle={-40} textAnchor="end" interval={0} />
+                      <YAxis tick={{ fill: 'var(--text3)', fontSize: 10 }} width={42} />
+                      <Tooltip content={<CurrencyTooltip />} cursor={{ fill: 'var(--accent-glow)' }} />
                       <Bar dataKey="quantityDistributed" name="Units Distributed" radius={[4,4,0,0]} maxBarSize={36}>
                           {stats.departmentBreakdown.slice(0, 15).map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
                       </Bar>
@@ -424,7 +423,7 @@ export default function Dashboard() {
                       >
                         {stats.departmentBreakdown.filter(d => d.estimatedValue > 0).slice(0, 8).map((entry, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
                       </Pie>
-                      <Tooltip formatter={(v) => fmtFull(v)} contentStyle={{ background: '#1a2236', border: '1px solid #2a3550', borderRadius: 8, fontSize: 12, color: '#eef2ff' }} itemStyle={{ color: '#eef2ff' }} labelStyle={{ color: '#eef2ff' }} />
+                      <Tooltip formatter={(v) => fmtFull(v)} contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, color: 'var(--text)' }} itemStyle={{ color: 'var(--text)' }} labelStyle={{ color: 'var(--text)' }} />
                       <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -498,12 +497,12 @@ export default function Dashboard() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={drillData} layout="vertical" margin={{ top: 4, right: 8, bottom: 4, left: 10 }}>
-                    <XAxis type="number" tickFormatter={fmt} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                    <XAxis type="number" tickFormatter={fmt} tick={{ fill: 'var(--text3)', fontSize: 10 }} />
                     <YAxis type="category" dataKey="itemName"
                       tickFormatter={v => v.length > 18 ? v.slice(0, 17) + '…' : v}
-                      tick={{ fill: '#94a3b8', fontSize: 10 }} width={130} />
-                    <Tooltip content={<CurrencyTooltip />} cursor={{ fill: 'rgba(249,115,22,0.06)' }} />
-                    <Bar dataKey="totalCost" name="Purchase Amount" fill="#f97316" radius={[0,4,4,0]} maxBarSize={18} />
+                      tick={{ fill: 'var(--text3)', fontSize: 10 }} width={130} />
+                    <Tooltip content={<CurrencyTooltip />} cursor={{ fill: 'var(--accent-glow)' }} />
+                    <Bar dataKey="totalCost" name="Purchase Amount" fill="var(--accent)" radius={[0,4,4,0]} maxBarSize={18} />
                   </BarChart>
                 </ResponsiveContainer>
                 <div style={{ overflowY: 'auto', maxHeight: 280 }}>
@@ -556,12 +555,12 @@ export default function Dashboard() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={deptData.topItems.slice(0, 15)} layout="vertical" margin={{ top: 4, right: 8, bottom: 4, left: 10 }}>
-                    <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                    <XAxis type="number" tick={{ fill: 'var(--text3)', fontSize: 10 }} />
                     <YAxis type="category" dataKey="name"
                       tickFormatter={v => v.length > 15 ? v.slice(0, 14) + '…' : v}
-                      tick={{ fill: '#94a3b8', fontSize: 10 }} width={110} />
-                    <Tooltip content={<CurrencyTooltip />} cursor={{ fill: 'rgba(249,115,22,0.06)' }} />
-                    <Bar dataKey="qty" name="Units Consumed" fill="#f97316" radius={[0,4,4,0]} maxBarSize={18} />
+                      tick={{ fill: 'var(--text3)', fontSize: 10 }} width={110} />
+                    <Tooltip content={<CurrencyTooltip />} cursor={{ fill: 'var(--accent-glow)' }} />
+                    <Bar dataKey="qty" name="Units Consumed" fill="var(--accent)" radius={[0,4,4,0]} maxBarSize={18} />
                   </BarChart>
                 </ResponsiveContainer>
                 <div style={{ overflowY: 'auto', maxHeight: 280 }}>

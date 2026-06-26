@@ -111,10 +111,10 @@ const AskNirvahana = () => {
           right: '28px',
           width: '390px',
           maxHeight: '560px',
-          background: 'linear-gradient(160deg, rgba(15, 18, 35, 0.98), rgba(8, 10, 22, 0.99))',
+          background: 'var(--chat-bg)',
           borderRadius: '24px',
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(249,115,22,0.08)',
+          border: '1px solid var(--chat-border)',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(94, 106, 210, 0.08)',
           zIndex: 1000,
           display: 'flex',
           flexDirection: 'column',
@@ -131,11 +131,11 @@ const AskNirvahana = () => {
           {/* Header */}
           <div style={{
             padding: '18px 20px 16px',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            borderBottom: '1px solid var(--chat-border)',
             display: 'flex',
             alignItems: 'center',
             gap: 12,
-            background: 'rgba(0,0,0,0.2)',
+            background: 'var(--chat-header-bg)',
           }}>
             <div style={{
               width: 40, height: 40, borderRadius: 12,
@@ -149,25 +149,25 @@ const AskNirvahana = () => {
               </svg>
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#eef2ff', letterSpacing: '-0.2px', fontFamily: "'Space Grotesk', sans-serif" }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--chat-title)', letterSpacing: '-0.2px', fontFamily: "'Space Grotesk', sans-serif" }}>
                 Nirvahana Uplink
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
                 <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#10d96e', boxShadow: '0 0 6px #10d96e' }} />
-                <span style={{ fontSize: 11, color: '#4a5280', fontWeight: 500 }}>AI Engine Active</span>
+                <span style={{ fontSize: 11, color: 'var(--chat-status)', fontWeight: 500 }}>AI Engine Active</span>
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
               style={{
-                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
-                color: '#7c85b0', cursor: 'pointer', fontSize: 14,
+                background: 'var(--chat-suggest-bg)', border: '1px solid var(--chat-border)',
+                color: 'var(--chat-status)', cursor: 'pointer', fontSize: 14,
                 width: 30, height: 30, borderRadius: 8,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.2s',
               }}
-              onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#eef2ff'; }}
-              onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#7c85b0'; }}
+              onMouseOver={e => { e.currentTarget.style.background = 'var(--chat-header-bg)'; e.currentTarget.style.color = 'var(--chat-title)'; }}
+              onMouseOut={e => { e.currentTarget.style.background = 'var(--chat-suggest-bg)'; e.currentTarget.style.color = 'var(--chat-status)'; }}
             >✕</button>
           </div>
 
@@ -194,15 +194,15 @@ const AskNirvahana = () => {
                     ? 'linear-gradient(135deg, #f97316, #ea6a06)'
                     : msg.isError
                       ? 'rgba(240,64,64,0.1)'
-                      : 'rgba(255,255,255,0.04)',
+                      : 'var(--chat-bubble-bot)',
                   border: msg.role === 'user'
                     ? 'none'
                     : msg.isError
                       ? '1px solid rgba(240,64,64,0.2)'
-                      : '1px solid rgba(255,255,255,0.06)',
+                      : '1px solid var(--chat-bubble-bot-border)',
                   fontSize: 13,
                   lineHeight: 1.55,
-                  color: msg.role === 'user' ? 'white' : '#d1d8f0',
+                  color: msg.role === 'user' ? 'white' : 'var(--chat-text-bot)',
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word',
                   boxShadow: msg.role === 'user' ? '0 4px 16px rgba(249,115,22,0.25)' : 'none',
@@ -220,7 +220,7 @@ const AskNirvahana = () => {
                     <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7v2a7 7 0 0 1-7 7H10a7 7 0 0 1-7-7v-2a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2zm-4 9a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm8 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm-4 4a4 4 0 0 0-3.46 2h6.92A4 4 0 0 0 12 15z"/>
                   </svg>
                 </div>
-                <div style={{ padding: '11px 16px', background: 'rgba(255,255,255,0.04)', borderRadius: '16px 16px 16px 4px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 5, alignItems: 'center' }}>
+                <div style={{ padding: '11px 16px', background: 'var(--chat-bubble-bot)', borderRadius: '16px 16px 16px 4px', border: '1px solid var(--chat-bubble-bot-border)', display: 'flex', gap: 5, alignItems: 'center' }}>
                   {[0, 1, 2].map(d => (
                     <div key={d} style={{ width: 5, height: 5, borderRadius: '50%', background: '#f97316', animation: `pulse 1.2s ease ${d * 0.2}s infinite` }} />
                   ))}
@@ -233,20 +233,20 @@ const AskNirvahana = () => {
           {/* Suggested Questions */}
           {messages.length <= 1 && !loading && (
             <div style={{ padding: '0 16px 10px' }}>
-              <div style={{ fontSize: 10, color: '#4a5280', letterSpacing: '0.8px', fontWeight: 600, marginBottom: 8 }}>SUGGESTIONS</div>
+              <div style={{ fontSize: 10, color: 'var(--chat-status)', letterSpacing: '0.8px', fontWeight: 600, marginBottom: 8 }}>SUGGESTIONS</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {SUGGESTED_QUESTIONS.map((q, i) => (
                   <button
                     key={i}
                     onClick={() => handleAsk(q)}
                     style={{
-                      padding: '8px 12px', background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8,
-                      color: '#7c85b0', fontSize: 12, textAlign: 'left', cursor: 'pointer',
+                      padding: '8px 12px', background: 'var(--chat-suggest-bg)',
+                      border: '1px solid var(--chat-suggest-border)', borderRadius: 8,
+                      color: 'var(--chat-suggest-text)', fontSize: 12, textAlign: 'left', cursor: 'pointer',
                       transition: 'all 0.2s', fontFamily: "'Plus Jakarta Sans', sans-serif",
                     }}
                     onMouseOver={e => { e.currentTarget.style.background = 'rgba(249,115,22,0.08)'; e.currentTarget.style.borderColor = 'rgba(249,115,22,0.2)'; e.currentTarget.style.color = '#f97316'; }}
-                    onMouseOut={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#7c85b0'; }}
+                    onMouseOut={e => { e.currentTarget.style.background = 'var(--chat-suggest-bg)'; e.currentTarget.style.borderColor = 'var(--chat-suggest-border)'; e.currentTarget.style.color = 'var(--chat-suggest-text)'; }}
                   >
                     ↗ {q}
                   </button>
@@ -256,7 +256,7 @@ const AskNirvahana = () => {
           )}
 
           {/* Input Area */}
-          <div style={{ padding: '12px 16px 16px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.15)' }}>
+          <div style={{ padding: '12px 16px 16px', borderTop: '1px solid var(--chat-border)', background: 'var(--chat-header-bg)' }}>
             <form onSubmit={e => { e.preventDefault(); handleAsk(); }} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
               <input
                 ref={inputRef}
@@ -265,17 +265,18 @@ const AskNirvahana = () => {
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Ask about inventory..."
                 disabled={loading}
+                className="chat-input"
                 style={{
                   flex: 1, padding: '11px 14px',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'var(--chat-input-bg)',
+                  border: '1px solid var(--chat-input-border)',
                   borderRadius: 12,
-                  color: '#eef2ff', fontSize: 13,
+                  color: 'var(--chat-input-text)', fontSize: 13,
                   fontFamily: "'Plus Jakarta Sans', sans-serif",
                   outline: 'none', transition: 'all 0.2s',
                 }}
-                onFocus={e => { e.target.style.borderColor = 'rgba(249,115,22,0.4)'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; }}
-                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; }}
+                onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px var(--accent-glow)'; }}
+                onBlur={e => { e.target.style.borderColor = 'var(--chat-input-border)'; e.target.style.boxShadow = 'none'; }}
               />
               <button
                 type="submit"
@@ -284,13 +285,13 @@ const AskNirvahana = () => {
                   width: 40, height: 40,
                   borderRadius: 12, border: 'none',
                   background: query.trim() && !loading
-                    ? 'linear-gradient(135deg, #f97316, #ea6a06)'
-                    : 'rgba(255,255,255,0.05)',
-                  color: query.trim() && !loading ? 'white' : '#4a5280',
+                    ? 'var(--chat-bubble-user)'
+                    : 'var(--chat-suggest-bg)',
+                  color: query.trim() && !loading ? 'white' : 'var(--chat-status)',
                   cursor: loading || !query.trim() ? 'not-allowed' : 'pointer',
                   flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 16, transition: 'all 0.2s',
-                  boxShadow: query.trim() && !loading ? '0 4px 16px rgba(249,115,22,0.3)' : 'none',
+                  boxShadow: query.trim() && !loading ? '0 4px 16px rgba(94, 106, 210, 0.25)' : 'none',
                 }}
               >↑</button>
             </form>

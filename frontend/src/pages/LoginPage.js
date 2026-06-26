@@ -103,10 +103,10 @@ export default function LoginPage() {
             justifyContent: 'center',
             padding: '12px',
             fontSize: 15,
-            background: 'linear-gradient(135deg, rgba(249,115,22,0.12) 0%, rgba(168,85,247,0.08) 100%)',
-            border: '1px solid rgba(249, 115, 22, 0.35)',
-            color: '#fb923c',
-            boxShadow: '0 4px 20px rgba(249,115,22,0.08)',
+            background: 'var(--accent-subtle)',
+            border: '1px solid var(--border)',
+            color: 'var(--accent-hover)',
+            boxShadow: '0 4px 12px var(--accent-glow)',
             fontWeight: 700
           }}
         >
