@@ -1,28 +1,7 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LOGO_PATH, COLLEGE_NAME, COLLEGE_SUB } from '../config/logo';
+import { COLLEGE_NAME, COLLEGE_SUB } from '../config/logo';
 import { useState, useEffect } from 'react';
-
-function LogoImage() {
-  const [err, setErr] = useState(false);
-  if (err) return (
-    <div style={{
-      width: 48, height: 48, borderRadius: 12, marginBottom: 14,
-      background: 'var(--accent-subtle)',
-      border: '1px solid var(--border)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 24, boxShadow: '0 4px 12px var(--accent-glow)'
-    }}>🏛️</div>
-  );
-  return (
-    <img
-      src={LOGO_PATH}
-      alt="College Logo"
-      onError={() => setErr(true)}
-      style={{ width: 48, height: 48, objectFit: 'contain', marginBottom: 14, borderRadius: 10 }}
-    />
-  );
-}
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: '◈', emoji: '📊', exact: true, desc: 'Analytics & Overview' },
@@ -92,8 +71,7 @@ export default function Layout() {
 
         {/* Logo Block */}
         <div className="sidebar-logo">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-            <LogoImage />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-end', width: '100%' }}>
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               style={{

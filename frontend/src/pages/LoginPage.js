@@ -1,20 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LOGO_PATH, COLLEGE_NAME, COLLEGE_SUB } from '../config/logo';
-
-function LogoImage() {
-  const [err, setErr] = useState(false);
-  if (err) return <div className="icon">📷<br/><span style={{fontSize: 10, marginTop: 4, display: 'block'}}>LOGO HERE</span></div>;
-  return (
-    <img
-      src={LOGO_PATH}
-      alt="College Logo"
-      onError={() => setErr(true)}
-      style={{ width: 72, height: 72, objectFit: 'contain', marginBottom: 12, borderRadius: 12 }}
-    />
-  );
-}
+import { COLLEGE_NAME, COLLEGE_SUB } from '../config/logo';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -48,7 +35,6 @@ export default function LoginPage() {
       <div className="login-bg" />
       <div className="login-card">
         <div className="login-logo">
-          <LogoImage />
           <h1>{COLLEGE_NAME}</h1>
           <p>{COLLEGE_SUB}</p>
         </div>
