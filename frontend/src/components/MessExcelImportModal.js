@@ -2,6 +2,29 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { messAPI } from '../api';
 
+const normalizeUOM = (uom) => {
+  if (!uom) return 'Kg';
+  const norm = uom.toString().trim().toLowerCase();
+  if (norm === 'kg' || norm === 'kgs' || norm === 'kilogram' || norm === 'kilograms') return 'Kg';
+  if (norm === 'litre' || norm === 'litres' || norm === 'liter' || norm === 'liters' || norm === 'l') return 'Litre';
+  if (norm === 'pack' || norm === 'packet' || norm === 'packets' || norm === 'packs') return 'Pack';
+  if (norm === 'bag' || norm === 'bags') return 'Bag';
+  if (norm === 'nos' || norm === 'no' || norm === 'number' || norm === 'numbers' || norm === 'pcs' || norm === 'pieces') return 'Nos';
+  
+  const matched = ['Kg', 'Litre', 'Pack', 'Bag', 'Nos'].find(val => val.toLowerCase() === norm);
+  if (matched) return matched;
+  return 'Kg';
+};
+
+const normalizeCategory = (cat) => {
+  if (!cat) return 'OTHER';
+  const norm = cat.toString().trim().toUpperCase();
+  const valid = ['GROCERY', 'VEGETABLE', 'DAIRY', 'MEAT', 'SPICE', 'FRUIT', 'OTHER'];
+  if (valid.includes(norm)) return norm;
+  if (norm === 'FRUITS') return 'FRUIT';
+  return 'OTHER';
+};
+
 // ── Column mapping lists by import type
 const IMPORT_TYPES = {
   items: {
@@ -14,9 +37,6 @@ const IMPORT_TYPES = {
       { key: 'uom', label: 'UOM', synonyms: ['uom', 'unit', 'unit\'s ', 'unit\'s  2'] },
       { key: 'threshold', label: 'Low Stock Threshold', synonyms: ['threshold', 'low stock threshold', 'min qty', 'order'] },
       { key: 'costPerUnit', label: 'Cost Per Unit (₹)', synonyms: ['cost per unit', 'unit price', 'cost', 'unit price (₹)'] },
-      { key: 'packingQuantity', label: 'Packing Qty', synonyms: ['packing quantity ', 'pack qty', 'packing quantity'] },
-      { key: 'dateOfVerified', label: 'Verified Date', synonyms: ['verified date', 'date of verified ', 'date verified'] },
-      { key: 'expiryDate', label: 'Expiry Date', synonyms: ['expiry date', 'exp date', 'expiry'] },
     ]
   },
   purchases: {
@@ -27,8 +47,8 @@ const IMPORT_TYPES = {
       { key: 'billNo', label: 'Bill / Invoice No', synonyms: ['bill no', 'invoice no', 'bill no/invoice no', 'bill/ invoice no', 'bill/invoice no'] },
       { key: 'company', label: 'Company / Brand', synonyms: ['company', 'brand', 'purchased-item company'] },
       { key: 'uom', label: 'UOM', synonyms: ['uom', 'unit', 'quantity '] },
-      { key: 'quantityPurchased', label: 'Qty Purchased *', required: true, synonyms: ['qty', 'quantity', 'qty purchased', 'quantity purchased', 'qty '] },
-      { key: 'unitPrice', label: 'Unit Price (₹) *', required: true, synonyms: ['unit price', 'price', 'rate', 'unit price (₹)'] },
+      { key: 'quantityPurchased', label: 'Qty Purchased', synonyms: ['qty', 'quantity', 'qty purchased', 'quantity purchased', 'qty '] },
+      { key: 'unitPrice', label: 'Unit Price (₹)', synonyms: ['unit price', 'price', 'rate', 'unit price (₹)'] },
       { key: 'shopName', label: 'Supplier / Shop Name', synonyms: ['shop name', 'supplier', 'supplier name', 'purchased from(shop name)'] },
       { key: 'particulars', label: 'Particulars / Purpose', synonyms: ['particulars', 'particulers', 'purpose', 'particulers for coking ', 'using on '] },
     ]
@@ -39,7 +59,7 @@ const IMPORT_TYPES = {
       { key: 'itemName', label: 'Item Name *', required: true, synonyms: ['item name', 'name of item', 'name of the item', 'name', 'name of the items ', 'name of item'] },
       { key: 'date', label: 'Issued Date', synonyms: ['issued date', 'date of issued ', 'date', 'issued date', 'date of  issued'] },
       { key: 'mealType', label: 'Meal Type', synonyms: ['meal', 'meal type', 'purpose of using ', 'particulers'] },
-      { key: 'qtyUsed', label: 'Qty Consumed *', required: true, synonyms: ['qty', 'qty used', 'quantity issued', 'quantity issued ', 'qty consumed'] },
+      { key: 'qtyUsed', label: 'Qty Consumed', synonyms: ['qty', 'qty used', 'quantity issued', 'quantity issued ', 'qty consumed'] },
       { key: 'uom', label: 'UOM / Unit', synonyms: ['uom', 'unit', 'uom/unit', 'quantity ', 'units'] },
       { key: 'qtySpoiled', label: 'Qty Spoiled / Waste', synonyms: ['qty spoiled', 'qty wasted', 'spoilage qty'] },
       { key: 'reason', label: 'Spoilage Reason', synonyms: ['reason', 'spoilage reason', 'reason for waste'] },
@@ -52,8 +72,8 @@ const IMPORT_TYPES = {
   'served-logs': {
     label: 'Served Meals & Headcount',
     fields: [
-      { key: 'date', label: 'Date served *', required: true, synonyms: ['date ', 'date', 'served date'] },
-      { key: 'mealType', label: 'Meal Type (e.g. LUNCH) *', required: true, synonyms: ['meal type', 'meal', 'type'] },
+      { key: 'date', label: 'Date served', synonyms: ['date ', 'date', 'served date'] },
+      { key: 'mealType', label: 'Meal Type (e.g. LUNCH)', synonyms: ['meal type', 'meal', 'type'] },
       { key: 'itemsNames', label: 'Dishes Served *', required: true, synonyms: ['items names', 'dishes', 'dishes served', 'food served', 'items names '] },
       { key: 'foodLeftOver', label: 'Leftover Food', synonyms: ['food left over', 'leftover', 'food lift over', 'food leftover'] },
       { key: 'feedback', label: 'Feedback Rating', synonyms: ['feed back', 'feedback', 'rating'] },
@@ -64,6 +84,19 @@ const IMPORT_TYPES = {
       { key: 'guestsFaculty', label: 'Guests/Faculty Count', synonyms: ['guests/faculty', 'guests', 'faculty', 'guests/faculty count', 'guests/faculty'] },
       { key: 'staffWardens', label: 'Staff & Wardens Count', synonyms: ['staff&wardens', 'staff', 'wardens', 'staff count'] },
       { key: 'others', label: 'Others Count', synonyms: ['others', 'others count'] },
+    ]
+  },
+  'groceries-supplies': {
+    label: 'Groceries Supplies',
+    fields: [
+      { key: 'itemName', label: 'Item Name *', required: true, synonyms: ['item name', 'name of item', 'name of the item', 'name', 'name of item', 'items names', 'name of item	'] },
+      { key: 'dateIssued', label: 'Date Issued', synonyms: ['date issued', 'date of issued ', 'date', 'issued date', 'date of  issued', 'date of issued	'] },
+      { key: 'quantityIssued', label: 'Qty Issued', synonyms: ['quantity issued', 'quantity issued ', 'qty issued', 'qty', 'qty ', 'quantity issued	'] },
+      { key: 'issuedTo', label: 'Issued To', synonyms: ['issued to', 'to', 'issued to	'] },
+      { key: 'issuedBy', label: 'Issued By', synonyms: ['issued by', 'by', 'issued by	'] },
+      { key: 'purposeOfUsed', label: 'Purpose of Used', synonyms: ['purpose of used', 'purpose of used ', 'purpose of used	'] },
+      { key: 'purposeOfUsing', label: 'Purpose of Using', synonyms: ['purpose of using', 'purpose of using ', 'purpose of using	'] },
+      { key: 'particularsExtraCooking', label: 'Extra Cooking Particulars', synonyms: ['particulars for extra cooking', 'particulars for extra cooking ', 'particulars for extra cooking	'] }
     ]
   }
 };
@@ -173,6 +206,9 @@ export default function MessExcelImportModal({ onClose, onImported }) {
       } else if (importType === 'served-logs') {
         const found = wb.SheetNames.find(s => s.toLowerCase().includes('menu') || s.toLowerCase().includes('day wise'));
         if (found) defaultSheet = found;
+      } else if (importType === 'groceries-supplies') {
+        const found = wb.SheetNames.find(s => s.toLowerCase().includes('grocery') || s.toLowerCase().includes('groceries') || s.toLowerCase().includes('supply') || s.toLowerCase().includes('supplies'));
+        if (found) defaultSheet = found;
       }
       
       setSelectedSheet(defaultSheet);
@@ -244,21 +280,30 @@ export default function MessExcelImportModal({ onClose, onImported }) {
         if (fieldKey) mapped[fieldKey] = value;
       });
 
+      if (mapped.uom !== undefined) mapped.uom = normalizeUOM(mapped.uom);
+      if (mapped.category !== undefined) mapped.category = normalizeCategory(mapped.category);
+
       // Simple validation rules
       const errors = [];
       if (importType === 'items') {
         if (!mapped.name || mapped.name.toString().trim() === '') errors.push('Item name is required');
       } else if (importType === 'purchases') {
         if (!mapped.itemName || mapped.itemName.toString().trim() === '') errors.push('Item name is required');
-        const qty = parseFloat(mapped.quantityPurchased) || 0;
-        if (qty <= 0) errors.push('Quantity must be greater than 0');
+        mapped.quantityPurchased = parseFloat(mapped.quantityPurchased) || 0;
+        mapped.unitPrice = parseFloat(mapped.unitPrice) || 0;
       } else if (importType === 'consumption') {
         if (!mapped.itemName || mapped.itemName.toString().trim() === '') errors.push('Item name is required');
-        const qtyUsed = parseFloat(mapped.qtyUsed) || 0;
-        const qtySpoiled = parseFloat(mapped.qtySpoiled) || 0;
-        if (qtyUsed <= 0 && qtySpoiled <= 0) errors.push('Quantity consumed/spoiled required');
+        mapped.qtyUsed = parseFloat(mapped.qtyUsed) || 0;
+        mapped.qtySpoiled = parseFloat(mapped.qtySpoiled) || 0;
       } else if (importType === 'served-logs') {
         if (!mapped.itemsNames || mapped.itemsNames.toString().trim() === '') errors.push('Dishes served names required');
+        mapped.date = mapped.date || new Date().toISOString().split('T')[0];
+        mapped.mealType = (mapped.mealType || 'GENERAL').toUpperCase().trim();
+      } else if (importType === 'groceries-supplies') {
+        if (!mapped.itemName || mapped.itemName.toString().trim() === '') errors.push('Item Name is required');
+        mapped.quantityIssued = parseFloat(mapped.quantityIssued) || 0;
+        mapped.issuedTo = (mapped.issuedTo || 'N/A').toString().trim();
+        mapped.issuedBy = (mapped.issuedBy || 'N/A').toString().trim();
       }
 
       if (errors.length > 0) {
@@ -286,6 +331,8 @@ export default function MessExcelImportModal({ onClose, onImported }) {
         res = await messAPI.bulkImportConsumption(validRows);
       } else if (importType === 'served-logs') {
         res = await messAPI.bulkImportServedLogs(validRows);
+      } else if (importType === 'groceries-supplies') {
+        res = await messAPI.bulkImportGroceriesSupplies(validRows);
       }
       setResult(res.data);
       setStep(4);

@@ -114,6 +114,10 @@ export const messAPI = {
   bulkImportPurchases: (data) => isDemo() ? mockMessAPI.bulkImportPurchases(data) : API.post('/mess/bulk-import-purchases', { purchases: data }),
   bulkImportConsumption: (data) => isDemo() ? mockMessAPI.bulkImportConsumption(data) : API.post('/mess/bulk-import-consumption', { logs: data }),
   bulkImportServedLogs: (data) => isDemo() ? mockMessAPI.bulkImportServedLogs(data) : API.post('/mess/bulk-import-served-logs', { logs: data }),
+  getGroceriesSupplies: () => isDemo() ? mockMessAPI.getGroceriesSupplies() : API.get('/mess/groceries-supplies'),
+  createGroceriesSupply: (data) => isDemo() ? mockMessAPI.createGroceriesSupply(data) : API.post('/mess/groceries-supplies', data),
+  deleteGroceriesSupply: (id) => isDemo() ? mockMessAPI.deleteGroceriesSupply(id) : API.delete(`/mess/groceries-supplies/${id}`),
+  bulkImportGroceriesSupplies: (data) => isDemo() ? mockMessAPI.bulkImportGroceriesSupplies(data) : API.post('/mess/groceries-supplies/bulk-import', data),
 };
 
 export default API;

@@ -5,7 +5,31 @@ const MessConsumption = require('../models/MessConsumption');
 const MessMenu = require('../models/MessMenu');
 const MessPurchase = require('../models/MessPurchase');
 const MessServedLog = require('../models/MessServedLog');
-const { protect } = require('../middleware/auth');
+const DailyGroceriesSupply = require('../models/DailyGroceriesSupply');
+const { protect, authorize } = require('../middleware/auth');
+
+function normalizeUOM(uom) {
+  if (!uom) return 'Kg';
+  const norm = uom.toString().trim().toLowerCase();
+  if (norm === 'kg' || norm === 'kgs' || norm === 'kilogram' || norm === 'kilograms') return 'Kg';
+  if (norm === 'litre' || norm === 'litres' || norm === 'liter' || norm === 'liters' || norm === 'l') return 'Litre';
+  if (norm === 'pack' || norm === 'packet' || norm === 'packets' || norm === 'packs') return 'Pack';
+  if (norm === 'bag' || norm === 'bags') return 'Bag';
+  if (norm === 'nos' || norm === 'no' || norm === 'number' || norm === 'numbers' || norm === 'pcs' || norm === 'pieces') return 'Nos';
+  
+  const matched = ['Kg', 'Litre', 'Pack', 'Bag', 'Nos'].find(val => val.toLowerCase() === norm);
+  if (matched) return matched;
+  return 'Kg';
+}
+
+function normalizeCategory(cat) {
+  if (!cat) return 'OTHER';
+  const norm = cat.toString().trim().toUpperCase();
+  const valid = ['GROCERY', 'VEGETABLE', 'DAIRY', 'MEAT', 'SPICE', 'FRUIT', 'OTHER'];
+  if (valid.includes(norm)) return norm;
+  if (norm === 'FRUITS') return 'FRUIT';
+  return 'OTHER';
+}
 
 // ── CATALOG ITEMS ROUTES ──
 
@@ -20,8 +44,11 @@ router.get('/items', protect, async (req, res) => {
 });
 
 // POST /api/mess/items - Add a new catalog item
-router.post('/items', protect, async (req, res) => {
+router.post('/items', protect, authorize('admin', 'mess', 'mess_staff'), async (req, res) => {
   try {
+    if (req.user.role !== 'admin') {
+      delete req.body.threshold;
+    }
     const newItem = await MessItem.create(req.body);
     res.status(201).json(newItem);
   } catch (err) {
@@ -30,10 +57,14 @@ router.post('/items', protect, async (req, res) => {
 });
 
 // PUT /api/mess/items/:id - Update item details/quantity
-router.put('/items/:id', protect, async (req, res) => {
+router.put('/items/:id', protect, authorize('admin', 'mess', 'mess_staff'), async (req, res) => {
   try {
     const existingItem = await MessItem.findById(req.params.id);
     if (!existingItem) return res.status(404).json({ message: 'Item not found' });
+
+    if (req.user.role !== 'admin') {
+      delete req.body.threshold;
+    }
 
     const qtyChanged = Number(existingItem.quantity) !== Number(req.body.quantity);
     if (qtyChanged) {
@@ -51,7 +82,7 @@ router.put('/items/:id', protect, async (req, res) => {
 });
 
 // DELETE /api/mess/items/:id - Remove catalog item
-router.delete('/items/:id', protect, async (req, res) => {
+router.delete('/items/:id', protect, authorize('admin', 'mess'), async (req, res) => {
   try {
     const varianceReason = req.body.varianceReason || req.query.varianceReason;
     if (!varianceReason || typeof varianceReason !== 'string' || !varianceReason.trim()) {
@@ -69,7 +100,7 @@ router.delete('/items/:id', protect, async (req, res) => {
 // ── DAILY CONSUMPTION & WASTAGE ROUTES ──
 
 // POST /api/mess/consumption - Log daily usage and spoilage (updates inventory quantities)
-router.post('/consumption', protect, async (req, res) => {
+router.post('/consumption', protect, authorize('admin', 'mess', 'mess_staff'), async (req, res) => {
   try {
     const { mealType, itemsUsed = [], spoilage = [], date, issuedBy, issuedTo, purposeOfUsed, particulars } = req.body;
     
@@ -144,7 +175,7 @@ router.get('/menu', protect, async (req, res) => {
 });
 
 // PUT /api/mess/menu/:day - Edit menu for a specific day
-router.put('/menu/:day', protect, async (req, res) => {
+router.put('/menu/:day', protect, authorize('admin', 'mess'), async (req, res) => {
   try {
     const menuDay = await MessMenu.findOneAndUpdate(
       { dayOfWeek: req.params.day },
@@ -229,7 +260,7 @@ router.get('/purchases', protect, async (req, res) => {
 });
 
 // POST /api/mess/purchases - Record a purchase (increments stock)
-router.post('/purchases', protect, async (req, res) => {
+router.post('/purchases', protect, authorize('admin', 'mess', 'mess_staff'), async (req, res) => {
   try {
     const { item, purchaseDate, billNo, company, uom, quantityPurchased, unitPrice, shopName, particulars } = req.body;
     
@@ -259,7 +290,7 @@ router.post('/purchases', protect, async (req, res) => {
 });
 
 // DELETE /api/mess/purchases/:id - Remove a purchase (decrements stock)
-router.delete('/purchases/:id', protect, async (req, res) => {
+router.delete('/purchases/:id', protect, authorize('admin', 'mess'), async (req, res) => {
   try {
     const purchase = await MessPurchase.findById(req.params.id);
     if (!purchase) return res.status(404).json({ message: 'Purchase record not found' });
@@ -289,7 +320,7 @@ router.get('/served-logs', protect, async (req, res) => {
 });
 
 // POST /api/mess/served-logs - Log a served meal
-router.post('/served-logs', protect, async (req, res) => {
+router.post('/served-logs', protect, authorize('admin', 'mess', 'mess_staff'), async (req, res) => {
   try {
     const newLog = await MessServedLog.create({
       ...req.body,
@@ -302,7 +333,7 @@ router.post('/served-logs', protect, async (req, res) => {
 });
 
 // DELETE /api/mess/served-logs/:id - Delete a served meal log
-router.delete('/served-logs/:id', protect, async (req, res) => {
+router.delete('/served-logs/:id', protect, authorize('admin', 'mess'), async (req, res) => {
   try {
     const log = await MessServedLog.findByIdAndDelete(req.params.id);
     if (!log) return res.status(404).json({ message: 'Served log not found' });
@@ -325,7 +356,7 @@ function parseExcelDate(raw) {
 }
 
 // POST /api/mess/bulk-import-items
-router.post('/bulk-import-items', protect, async (req, res) => {
+router.post('/bulk-import-items', protect, authorize('admin', 'mess'), async (req, res) => {
   try {
     const { items } = req.body;
     if (!Array.isArray(items) || !items.length)
@@ -341,15 +372,12 @@ router.post('/bulk-import-items', protect, async (req, res) => {
         const name = (row.name || '').toString().trim();
         if (!name) throw new Error('Item name is required');
 
-        const category = (row.category || 'OTHER').toString().toUpperCase().trim();
+        const category = normalizeCategory(row.category);
         const quantity = parseFloat(row.quantity) || 0;
-        const uom = (row.uom || 'Kg').toString().trim();
-        const threshold = parseFloat(row.threshold) || 5;
+        const uom = normalizeUOM(row.uom);
+        const threshold = req.user.role === 'admin' ? (parseFloat(row.threshold) || 5) : 5;
         const costPerUnit = parseFloat(row.costPerUnit) || 0;
         const nameTelugu = (row.nameTelugu || '').toString().trim() || undefined;
-        const packingQuantity = parseFloat(row.packingQuantity) || 0;
-        const dateOfVerified = row.dateOfVerified ? parseExcelDate(row.dateOfVerified) : undefined;
-        const expiryDate = row.expiryDate ? parseExcelDate(row.expiryDate) : undefined;
 
         // Check if exists
         let itemDoc = await MessItem.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
@@ -357,10 +385,10 @@ router.post('/bulk-import-items', protect, async (req, res) => {
           // Merge / update quantity
           itemDoc.quantity += quantity;
           if (nameTelugu) itemDoc.nameTelugu = nameTelugu;
-          if (packingQuantity) itemDoc.packingQuantity = packingQuantity;
-          if (dateOfVerified) itemDoc.dateOfVerified = dateOfVerified;
-          if (expiryDate) itemDoc.expiryDate = expiryDate;
           if (costPerUnit) itemDoc.costPerUnit = costPerUnit;
+          if (req.user.role === 'admin' && row.threshold !== undefined) {
+            itemDoc.threshold = threshold;
+          }
           await itemDoc.save();
         } else {
           // Create new
@@ -371,10 +399,7 @@ router.post('/bulk-import-items', protect, async (req, res) => {
             quantity,
             uom,
             threshold,
-            costPerUnit,
-            packingQuantity,
-            dateOfVerified,
-            expiryDate
+            costPerUnit
           });
         }
         imported++;
@@ -391,7 +416,7 @@ router.post('/bulk-import-items', protect, async (req, res) => {
 });
 
 // POST /api/mess/bulk-import-purchases
-router.post('/bulk-import-purchases', protect, async (req, res) => {
+router.post('/bulk-import-purchases', protect, authorize('admin', 'mess'), async (req, res) => {
   try {
     const { purchases } = req.body;
     if (!Array.isArray(purchases) || !purchases.length)
@@ -408,9 +433,7 @@ router.post('/bulk-import-purchases', protect, async (req, res) => {
         if (!itemName) throw new Error('Item Name is required');
 
         const quantityPurchased = parseFloat(row.quantityPurchased) || 0;
-        if (quantityPurchased <= 0) throw new Error('Quantity purchased must be greater than 0');
-
-        const uom = (row.uom || 'Kg').toString().trim();
+        const uom = normalizeUOM(row.uom);
         const unitPrice = parseFloat(row.unitPrice) || 0;
         const purchaseDate = parseExcelDate(row.purchaseDate);
         const billNo = (row.billNo || '').toString().trim() || undefined;
@@ -426,7 +449,7 @@ router.post('/bulk-import-purchases', protect, async (req, res) => {
             name: itemName,
             category: 'OTHER',
             quantity: 0,
-            uom,
+            uom: uom,
             threshold: 5
           });
         }
@@ -464,7 +487,7 @@ router.post('/bulk-import-purchases', protect, async (req, res) => {
 });
 
 // POST /api/mess/bulk-import-consumption
-router.post('/bulk-import-consumption', protect, async (req, res) => {
+router.post('/bulk-import-consumption', protect, authorize('admin', 'mess'), async (req, res) => {
   try {
     const { logs } = req.body;
     if (!Array.isArray(logs) || !logs.length)
@@ -482,8 +505,6 @@ router.post('/bulk-import-consumption', protect, async (req, res) => {
 
         const qtyUsed = parseFloat(row.qtyUsed) || 0;
         const qtySpoiled = parseFloat(row.qtySpoiled) || 0;
-        if (qtyUsed <= 0 && qtySpoiled <= 0) throw new Error('Quantity used or spoiled must be greater than 0');
-
         const date = parseExcelDate(row.date);
         const mealType = (row.mealType || 'GENERAL').toString().toUpperCase().trim();
         const reason = (row.reason || '').toString().trim() || undefined;
@@ -492,7 +513,7 @@ router.post('/bulk-import-consumption', protect, async (req, res) => {
         const purposeOfUsed = (row.purposeOfUsed || '').toString().trim() || undefined;
         const particulars = (row.particulars || '').toString().trim() || undefined;
 
-        const uom = (row.uom || 'Kg').toString().trim();
+        const uom = normalizeUOM(row.uom);
         // Resolve MessItem
         let itemDoc = await MessItem.findOne({ name: { $regex: new RegExp(`^${itemName}$`, 'i') } });
         if (!itemDoc) {
@@ -539,7 +560,7 @@ router.post('/bulk-import-consumption', protect, async (req, res) => {
 });
 
 // POST /api/mess/bulk-import-served-logs
-router.post('/bulk-import-served-logs', protect, async (req, res) => {
+router.post('/bulk-import-served-logs', protect, authorize('admin', 'mess'), async (req, res) => {
   try {
     const { logs } = req.body;
     if (!Array.isArray(logs) || !logs.length)
@@ -594,6 +615,138 @@ router.post('/bulk-import-served-logs', protect, async (req, res) => {
     res.json({ imported, failed, errors });
   } catch (err) {
     res.status(500).json({ message: err.message || 'Bulk import served logs failed' });
+  }
+});
+
+// ── DAILY GROCERIES SUPPLIES ROUTES ──
+
+// GET /api/mess/groceries-supplies - Fetch all groceries supplies records
+router.get('/groceries-supplies', protect, async (req, res) => {
+  try {
+    const supplies = await DailyGroceriesSupply.find()
+      .populate('item', 'name category uom')
+      .populate('recordedBy', 'name email')
+      .sort({ dateIssued: -1 });
+    res.json(supplies);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch daily groceries supplies' });
+  }
+});
+
+// POST /api/mess/groceries-supplies - Record a grocery supply (decrements stock)
+router.post('/groceries-supplies', protect, authorize('admin', 'mess', 'mess_staff'), async (req, res) => {
+  try {
+    const { item, dateIssued, quantityIssued, purposeOfUsed, purposeOfUsing, issuedTo, issuedBy, particularsExtraCooking } = req.body;
+    
+    if (!item) return res.status(400).json({ message: 'Item is required' });
+    if (!quantityIssued || Number(quantityIssued) <= 0) return res.status(400).json({ message: 'Quantity issued must be greater than 0' });
+    if (!issuedTo || !issuedTo.trim()) return res.status(400).json({ message: 'Issued To is required' });
+    if (!issuedBy || !issuedBy.trim()) return res.status(400).json({ message: 'Issued By is required' });
+
+    const messItem = await MessItem.findById(item);
+    if (!messItem) return res.status(404).json({ message: 'Item not found in catalog' });
+
+    // Validate sufficient stock
+    if (messItem.quantity < Number(quantityIssued)) {
+      return res.status(400).json({ message: `Insufficient stock for ${messItem.name}! Available: ${messItem.quantity} ${messItem.uom}, Requested: ${quantityIssued} ${messItem.uom}` });
+    }
+
+    // Decrement stock
+    messItem.quantity -= Number(quantityIssued);
+    await messItem.save();
+
+    const newSupply = await DailyGroceriesSupply.create({
+      itemName: messItem.name,
+      item,
+      dateIssued: dateIssued || undefined,
+      uom: messItem.uom,
+      quantityIssued: Number(quantityIssued),
+      purposeOfUsed,
+      purposeOfUsing,
+      issuedTo,
+      issuedBy,
+      particularsExtraCooking,
+      recordedBy: req.user._id
+    });
+
+    res.status(201).json(newSupply);
+  } catch (err) {
+    res.status(400).json({ message: err.message || 'Failed to record groceries supply' });
+  }
+});
+
+// DELETE /api/mess/groceries-supplies/:id - Remove a groceries supply (reverts/increments stock)
+router.delete('/groceries-supplies/:id', protect, authorize('admin', 'mess'), async (req, res) => {
+  try {
+    const supply = await DailyGroceriesSupply.findById(req.params.id);
+    if (!supply) return res.status(404).json({ message: 'Groceries supply record not found' });
+
+    // Revert/increment stock
+    await MessItem.findByIdAndUpdate(supply.item, { $inc: { quantity: Number(supply.quantityIssued) } });
+    await DailyGroceriesSupply.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Groceries supply record deleted and stock reverted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to delete groceries supply record' });
+  }
+});
+
+// POST /api/mess/groceries-supplies/bulk-import - Bulk import groceries supplies from excel JSON
+router.post('/groceries-supplies/bulk-import', protect, authorize('admin', 'mess'), async (req, res) => {
+  try {
+    const data = req.body;
+    if (!Array.isArray(data)) return res.status(400).json({ message: 'Payload must be an array of supply records' });
+
+    let imported = 0;
+    let failed = 0;
+    const errors = [];
+
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      try {
+        const itemName = (row.itemName || '').toString().trim();
+        if (!itemName) throw new Error('Item Name is required');
+
+        const quantityIssued = !isNaN(Number(row.quantityIssued)) && Number(row.quantityIssued) > 0 ? Number(row.quantityIssued) : 1;
+        const issuedTo = (row.issuedTo || 'N/A').toString().trim();
+        const issuedBy = (row.issuedBy || 'N/A').toString().trim();
+        const dateIssued = row.dateIssued || new Date().toISOString();
+
+        const messItem = await MessItem.findOne({ name: new RegExp('^' + itemName + '$', 'i') });
+        if (!messItem) throw new Error(`Item "${itemName}" not found in catalog`);
+
+        if (messItem.quantity < quantityIssued) {
+          throw new Error(`Insufficient stock: available ${messItem.quantity} ${messItem.uom}, requested ${quantityIssued}`);
+        }
+
+        // Decrement stock
+        messItem.quantity -= quantityIssued;
+        await messItem.save();
+
+        await DailyGroceriesSupply.create({
+          itemName: messItem.name,
+          item: messItem._id,
+          dateIssued,
+          uom: messItem.uom,
+          quantityIssued,
+          purposeOfUsed: row.purposeOfUsed,
+          purposeOfUsing: row.purposeOfUsing,
+          issuedTo,
+          issuedBy,
+          particularsExtraCooking: row.particularsExtraCooking,
+          recordedBy: req.user._id
+        });
+
+        imported++;
+      } catch (err) {
+        failed++;
+        errors.push({ row: i + 1, itemName: row.itemName || '—', reason: err.message });
+      }
+    }
+
+    res.json({ imported, failed, errors });
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Bulk import groceries supplies failed' });
   }
 });
 

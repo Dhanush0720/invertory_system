@@ -88,6 +88,7 @@ function TabButton({ active, label, emoji, onClick }) {
   return (
     <button
       onClick={onClick}
+      className="tab-button"
       style={{
         background: active ? 'var(--accent)' : 'var(--accent-subtle)',
         color: active ? '#fff' : 'var(--text2)',
@@ -140,7 +141,7 @@ function StockBadge({ quantity, threshold }) {
 // 1. STOCK CATALOG TAB
 // ═════════════════════════════════════════════════════════════════════════════
 function StockCatalogTab() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -155,9 +156,6 @@ function StockCatalogTab() {
     uom: 'Kg',
     threshold: '10',
     costPerUnit: '',
-    packingQuantity: '0',
-    dateOfVerified: '',
-    expiryDate: '',
     varianceReason: ''
   });
 
@@ -179,10 +177,7 @@ function StockCatalogTab() {
         ...form,
         quantity: Number(form.quantity),
         threshold: Number(form.threshold),
-        costPerUnit: Number(form.costPerUnit || 0),
-        packingQuantity: Number(form.packingQuantity || 0),
-        dateOfVerified: form.dateOfVerified || undefined,
-        expiryDate: form.expiryDate || undefined
+        costPerUnit: Number(form.costPerUnit || 0)
       };
 
       if (editingItem) {
@@ -192,7 +187,7 @@ function StockCatalogTab() {
       }
       setShowForm(false);
       setEditingItem(null);
-      setForm({ name: '', nameTelugu: '', category: 'GROCERY', quantity: '', uom: 'Kg', threshold: '10', costPerUnit: '', packingQuantity: '0', dateOfVerified: '', expiryDate: '', varianceReason: '' });
+      setForm({ name: '', nameTelugu: '', category: 'GROCERY', quantity: '', uom: 'Kg', threshold: '10', costPerUnit: '', varianceReason: '' });
       loadItems();
     } catch (e) {
       alert(e.response?.data?.message || 'Error saving item');
@@ -209,9 +204,6 @@ function StockCatalogTab() {
       uom: item.uom,
       threshold: item.threshold,
       costPerUnit: item.costPerUnit || '',
-      packingQuantity: item.packingQuantity || '0',
-      dateOfVerified: item.dateOfVerified ? new Date(item.dateOfVerified).toISOString().split('T')[0] : '',
-      expiryDate: item.expiryDate ? new Date(item.expiryDate).toISOString().split('T')[0] : '',
       varianceReason: ''
     });
     setShowForm(true);
@@ -245,13 +237,6 @@ function StockCatalogTab() {
   const outOfStockCount = items.filter(i => i.quantity <= 0).length;
   const totalValue = items.reduce((acc, i) => acc + (i.quantity * i.costPerUnit), 0);
 
-  // Expiring items (within 3 days)
-  const expiringItems = items.filter(i => {
-    if (!i.expiryDate) return false;
-    const diff = (new Date(i.expiryDate) - new Date()) / (1000 * 60 * 60 * 24);
-    return diff >= 0 && diff <= 3;
-  });
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* KPI Row */}
@@ -278,23 +263,7 @@ function StockCatalogTab() {
         ))}
       </div>
 
-      {/* Expiry Warning */}
-      {expiringItems.length > 0 && (
-        <div style={{
-          ...cardStyle, padding: 14,
-          background: 'linear-gradient(135deg, rgba(240,64,64,0.08), rgba(245,166,35,0.05))',
-          borderColor: 'rgba(240,64,64,0.3)',
-          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-        }}>
-          <span style={{ fontSize: 20 }}>🚨</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#f04040' }}>Expiring Soon!</div>
-            <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 3 }}>
-              {expiringItems.map(i => `${i.name} (${new Date(i.expiryDate).toLocaleDateString('en-IN')})`).join(', ')}
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Toolbar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -302,7 +271,7 @@ function StockCatalogTab() {
           <button style={btnPrimary} onClick={() => {
             setShowForm(!showForm);
             setEditingItem(null);
-            setForm({ name: '', nameTelugu: '', category: 'GROCERY', quantity: '', uom: 'Kg', threshold: '10', costPerUnit: '', packingQuantity: '0', dateOfVerified: '', expiryDate: '' });
+            setForm({ name: '', nameTelugu: '', category: 'GROCERY', quantity: '', uom: 'Kg', threshold: '10', costPerUnit: '' });
           }}>
             {showForm ? '✕ Cancel' : '＋ Add Item'}
           </button>
@@ -328,7 +297,7 @@ function StockCatalogTab() {
             doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')} | Items: ${filtered.length} | Value: ₹${totalValue.toLocaleString('en-IN')}`, 14, 28);
             autoTable(doc, {
               startY: 35,
-              head: [['Item', 'Telugu Name', 'Category', 'Qty', 'UOM', 'Cost/Unit', 'Packing Qty', 'Total Value', 'Verified', 'Expiry', 'Status']],
+              head: [['Item', 'Telugu Name', 'Category', 'Qty', 'UOM', 'Cost/Unit', 'Total Value', 'Status']],
               body: filtered.map(i => [
                 i.name,
                 i.nameTelugu || '—',
@@ -336,10 +305,7 @@ function StockCatalogTab() {
                 i.quantity,
                 i.uom,
                 `₹${i.costPerUnit}`,
-                i.packingQuantity || '—',
                 `₹${(i.quantity * i.costPerUnit).toLocaleString('en-IN')}`,
-                i.dateOfVerified ? new Date(i.dateOfVerified).toLocaleDateString('en-IN') : '—',
-                i.expiryDate ? new Date(i.expiryDate).toLocaleDateString('en-IN') : '—',
                 i.quantity <= 0 ? 'OUT' : i.quantity <= i.threshold ? 'LOW' : 'OK'
               ]),
               theme: 'grid', headStyles: { fillColor: [94, 106, 210] },
@@ -356,10 +322,7 @@ function StockCatalogTab() {
               Quantity: i.quantity,
               UOM: i.uom,
               'Cost/Unit': i.costPerUnit,
-              'Packing Quantity': i.packingQuantity || 0,
               'Total Value': i.quantity * i.costPerUnit,
-              'Last Verified': i.dateOfVerified ? new Date(i.dateOfVerified).toLocaleDateString('en-IN') : '',
-              'Expiry Date': i.expiryDate ? new Date(i.expiryDate).toLocaleDateString('en-IN') : '',
               Status: i.quantity <= 0 ? 'Out of Stock' : i.quantity <= i.threshold ? 'Low Stock' : 'In Stock'
             })));
             const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Mess Stock');
@@ -380,11 +343,10 @@ function StockCatalogTab() {
             <div><label style={labelStyle}>Category</label><select style={selectStyle} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
             <div><label style={labelStyle}>Quantity</label><input style={inputStyle} required type="number" min="0" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} /></div>
             <div><label style={labelStyle}>Unit</label><select style={selectStyle} value={form.uom} onChange={e => setForm({ ...form, uom: e.target.value })}>{UOM_OPTIONS.map(u => <option key={u} value={u}>{u}</option>)}</select></div>
-            <div><label style={labelStyle}>Low Stock Threshold</label><input style={inputStyle} type="number" min="0" value={form.threshold} onChange={e => setForm({ ...form, threshold: e.target.value })} /></div>
+            {user?.role === 'admin' && (
+              <div><label style={labelStyle}>Low Stock Threshold</label><input style={inputStyle} type="number" min="0" value={form.threshold} onChange={e => setForm({ ...form, threshold: e.target.value })} /></div>
+            )}
             <div><label style={labelStyle}>Cost/Unit (₹)</label><input style={inputStyle} type="number" min="0" value={form.costPerUnit} onChange={e => setForm({ ...form, costPerUnit: e.target.value })} /></div>
-            <div><label style={labelStyle}>Packing Quantity</label><input style={inputStyle} type="number" min="0" value={form.packingQuantity} onChange={e => setForm({ ...form, packingQuantity: e.target.value })} /></div>
-            <div><label style={labelStyle}>Verified Date</label><input style={inputStyle} type="date" value={form.dateOfVerified} onChange={e => setForm({ ...form, dateOfVerified: e.target.value })} /></div>
-            <div><label style={labelStyle}>Expiry Date</label><input style={inputStyle} type="date" value={form.expiryDate} onChange={e => setForm({ ...form, expiryDate: e.target.value })} /></div>
             {editingItem && Number(form.quantity) !== Number(editingItem.quantity) && (
               <div style={{ gridColumn: 'span 2' }}>
                 <label style={{ ...labelStyle, color: 'var(--warning, #f5a623)', fontWeight: 'bold' }}>⚠️ Stock Adjustment Reason *</label>
@@ -414,7 +376,7 @@ function StockCatalogTab() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['Item Name', 'Category', 'Qty', 'UOM', 'Cost/Unit', 'Total Value', 'Packing Qty', 'Verified On', 'Expiry', 'Status', can('add') ? 'Actions' : ''].filter(Boolean).map((h, i) => (
+                {['Item Name', 'Category', 'Qty', 'UOM', 'Cost/Unit', 'Total Value', 'Status', (can('edit') || can('delete')) ? 'Actions' : ''].filter(Boolean).map((h, i) => (
                   <th key={i} style={{ padding: '14px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.8px', background: 'var(--accent-subtle)' }}>{h}</th>
                 ))}
               </tr>
@@ -436,15 +398,12 @@ function StockCatalogTab() {
                   <td style={{ padding: '12px 16px', color: 'var(--text3)' }}>{item.uom}</td>
                   <td style={{ padding: '12px 16px', color: 'var(--text2)' }}>₹{item.costPerUnit}</td>
                   <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>₹{(item.quantity * item.costPerUnit).toLocaleString('en-IN')}</td>
-                  <td style={{ padding: '12px 16px', color: 'var(--text2)' }}>{item.packingQuantity || '—'}</td>
-                  <td style={{ padding: '12px 16px', color: 'var(--text3)', fontSize: 12 }}>{item.dateOfVerified ? new Date(item.dateOfVerified).toLocaleDateString('en-IN') : '—'}</td>
-                  <td style={{ padding: '12px 16px', color: 'var(--text3)', fontSize: 12 }}>{item.expiryDate ? new Date(item.expiryDate).toLocaleDateString('en-IN') : '—'}</td>
                   <td style={{ padding: '12px 16px' }}><StockBadge quantity={item.quantity} threshold={item.threshold} /></td>
-                  {can('add') && (
+                  {(can('edit') || can('delete')) && (
                     <td style={{ padding: '12px 16px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button style={btnSecondary} onClick={() => handleEdit(item)}>✏️</button>
-                        <button style={btnDanger} onClick={() => handleDelete(item._id)}>🗑️</button>
+                        {can('edit') && <button style={btnSecondary} onClick={() => handleEdit(item)}>✏️</button>}
+                        {can('delete') && <button style={btnDanger} onClick={() => handleDelete(item._id)}>🗑️</button>}
                       </div>
                     </td>
                   )}
@@ -803,7 +762,7 @@ function WeeklyMenuTab() {
                     <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-heading)' }}>{day}</div>
                     {isToday && <span style={{ fontSize: 9, color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>📍 TODAY</span>}
                   </div>
-                  {can('add') && (
+                  {can('manage_menu') && (
                     <button style={{ ...btnSecondary, padding: '5px 10px', fontSize: 11 }} onClick={() => handleEditDay(day)}>✏️ Edit</button>
                   )}
                 </div>
@@ -1213,7 +1172,7 @@ function PurchasesTab() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['Date', 'Item Name', 'Supplier', 'Bill No', 'Qty', 'Unit Price', 'Total Cost', 'Brand', 'Particulars', can('add') ? 'Actions' : ''].filter(Boolean).map((h, i) => (
+                {['Date', 'Item Name', 'Supplier', 'Bill No', 'Qty', 'Unit Price', 'Total Cost', 'Brand', 'Particulars', can('delete') ? 'Actions' : ''].filter(Boolean).map((h, i) => (
                   <th key={i} style={{ padding: '12px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.8px', background: 'var(--accent-subtle)' }}>{h}</th>
                 ))}
               </tr>
@@ -1233,7 +1192,7 @@ function PurchasesTab() {
                   <td style={{ padding: '12px 14px', fontWeight: 600 }}>₹{p.totalCost || (p.quantityPurchased * p.unitPrice)}</td>
                   <td style={{ padding: '12px 14px' }}>{p.company || '—'}</td>
                   <td style={{ padding: '12px 14px', fontSize: 11, color: 'var(--text2)' }}>{p.particulars || '—'}</td>
-                  {can('add') && (
+                  {can('delete') && (
                     <td style={{ padding: '12px 14px' }}>
                       <button style={btnDanger} onClick={() => handleDelete(p._id)}>🗑️</button>
                     </td>
@@ -1436,7 +1395,7 @@ function ServedMealsTab() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['Date', 'Meal Type', 'Dishes Served', 'Leftover', 'Feedback', 'Boys', 'Girls', 'Staff/Others', 'Total Headcount', can('add') ? 'Actions' : ''].filter(Boolean).map((h, i) => (
+                {['Date', 'Meal Type', 'Dishes Served', 'Leftover', 'Feedback', 'Boys', 'Girls', 'Staff/Others', 'Total Headcount', can('delete') ? 'Actions' : ''].filter(Boolean).map((h, i) => (
                   <th key={i} style={{ padding: '12px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.8px', background: 'var(--accent-subtle)' }}>{h}</th>
                 ))}
               </tr>
@@ -1467,7 +1426,7 @@ function ServedMealsTab() {
                     <td style={{ padding: '12px 14px' }}>{log.girlsHostel || 0}</td>
                     <td style={{ padding: '12px 14px' }}>{staffAndOthers}</td>
                     <td style={{ padding: '12px 14px', fontWeight: 800, color: 'var(--text)' }}>{log.total || (log.boysHostel + log.girlsHostel + staffAndOthers)}</td>
-                    {can('add') && (
+                    {can('delete') && (
                       <td style={{ padding: '12px 14px' }}>
                         <button style={btnDanger} onClick={() => handleDelete(log._id)}>🗑️</button>
                       </td>
@@ -1484,27 +1443,314 @@ function ServedMealsTab() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// 7. DAILY GROCERIES SUPPLIES TAB
+// ═════════════════════════════════════════════════════════════════════════════
+function DailyGroceriesSuppliesTab() {
+  const { can } = useAuth();
+  const [items, setItems] = useState([]);
+  const [supplies, setSupplies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const [form, setForm] = useState({
+    item: '',
+    dateIssued: new Date().toISOString().split('T')[0],
+    quantityIssued: '',
+    uom: '',
+    purposeOfUsed: '',
+    purposeOfUsing: '',
+    issuedTo: '',
+    issuedBy: '',
+    particularsExtraCooking: ''
+  });
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [itemsRes, suppliesRes] = await Promise.all([
+        messAPI.getItems(),
+        messAPI.getGroceriesSupplies()
+      ]);
+      setItems(itemsRes.data);
+      setSupplies(suppliesRes.data);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const selectedItem = items.find(i => i._id === form.item);
+
+  useEffect(() => {
+    if (selectedItem) {
+      setForm(f => ({ ...f, uom: selectedItem.uom }));
+    } else {
+      setForm(f => ({ ...f, uom: '' }));
+    }
+  }, [form.item, selectedItem]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.item) {
+      alert('Please select an item from the catalog');
+      return;
+    }
+    if (selectedItem && selectedItem.quantity < Number(form.quantityIssued)) {
+      alert(`Insufficient stock! Available: ${selectedItem.quantity} ${selectedItem.uom}, Requested: ${form.quantityIssued} ${selectedItem.uom}`);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await messAPI.createGroceriesSupply({
+        ...form,
+        quantityIssued: Number(form.quantityIssued)
+      });
+      setForm({
+        item: '',
+        dateIssued: new Date().toISOString().split('T')[0],
+        quantityIssued: '',
+        uom: '',
+        purposeOfUsed: '',
+        purposeOfUsing: '',
+        issuedTo: '',
+        issuedBy: '',
+        particularsExtraCooking: ''
+      });
+      setShowForm(false);
+      loadData();
+    } catch (e) {
+      alert(e.response?.data?.message || 'Error recording groceries supply');
+    }
+    setSubmitting(false);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this groceries supply record? This will revert/increase the item stock.')) return;
+    try {
+      await messAPI.deleteGroceriesSupply(id);
+      loadData();
+    } catch (e) {
+      alert(e.response?.data?.message || 'Error deleting groceries supply record');
+    }
+  };
+
+  const filtered = supplies.filter(s => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      (s.itemName || '').toLowerCase().includes(q) ||
+      (s.issuedTo || '').toLowerCase().includes(q) ||
+      (s.issuedBy || '').toLowerCase().includes(q) ||
+      (s.purposeOfUsed || '').toLowerCase().includes(q) ||
+      (s.purposeOfUsing || '').toLowerCase().includes(q)
+    );
+  });
+
+  const totalIssuedCount = filtered.length;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+        <div style={{ ...cardStyle, padding: 18, background: 'linear-gradient(135deg, var(--accent)08, transparent)', borderColor: 'var(--accent)30' }}>
+          <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600 }}>Total Groceries Supplies Logged</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-heading)', marginTop: 4 }}>{supplies.length}</div>
+        </div>
+        <div style={{ ...cardStyle, padding: 18, background: 'linear-gradient(135deg, var(--success)08, transparent)', borderColor: 'var(--success)30' }}>
+          <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600 }}>Filtered Transactions</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--success)', fontFamily: 'var(--font-heading)', marginTop: 4 }}>{totalIssuedCount}</div>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        {can('add') && (
+          <button style={btnPrimary} onClick={() => setShowForm(!showForm)}>
+            {showForm ? '✕ Cancel' : '＋ Add Daily Grocery Issue'}
+          </button>
+        )}
+        <input
+          placeholder="Search supplies..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ ...inputStyle, maxWidth: 240 }}
+        />
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <button style={btnSecondary} onClick={async () => {
+            const { default: jsPDF } = await import('jspdf');
+            const { default: autoTable } = await import('jspdf-autotable');
+            const doc = new jsPDF();
+            doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+            doc.text('Daily Groceries Supplies Report', 14, 20);
+            doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+            doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')} | Records: ${filtered.length}`, 14, 28);
+            autoTable(doc, {
+              startY: 35,
+              head: [['Date Issued', 'Item Name', 'Qty Issued', 'UOM', 'Issued To', 'Issued By', 'Purpose of Used', 'Purpose of Using', 'Extra Cooking Particulars']],
+              body: filtered.map(s => [
+                new Date(s.dateIssued).toLocaleDateString('en-IN'),
+                s.itemName || s.item?.name || '—',
+                s.quantityIssued,
+                s.uom || s.item?.uom || '—',
+                s.issuedTo || '—',
+                s.issuedBy || '—',
+                s.purposeOfUsed || '—',
+                s.purposeOfUsing || '—',
+                s.particularsExtraCooking || '—'
+              ]),
+              theme: 'grid', headStyles: { fillColor: [94, 106, 210] },
+              styles: { fontSize: 7 }
+            });
+            doc.save('Daily_Groceries_Supplies_Report.pdf');
+          }}>📄 PDF</button>
+          <button style={btnSecondary} onClick={async () => {
+            const XLSX = await import('xlsx');
+            const ws = XLSX.utils.json_to_sheet(filtered.map(s => ({
+              'Date Issued': new Date(s.dateIssued).toLocaleDateString('en-IN'),
+              'Item Name': s.itemName || s.item?.name || '',
+              'Quantity Issued': s.quantityIssued,
+              'UOM': s.uom || s.item?.uom || '',
+              'Issued To': s.issuedTo || '',
+              'Issued By': s.issuedBy || '',
+              'Purpose of Used': s.purposeOfUsed || '',
+              'Purpose of Using': s.purposeOfUsing || '',
+              'Extra Cooking Particulars': s.particularsExtraCooking || ''
+            })));
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Groceries Supplies');
+            XLSX.writeFile(wb, 'Daily_Groceries_Supplies_Report.xlsx');
+          }}>📗 Excel</button>
+        </div>
+      </div>
+
+      {/* Form */}
+      {showForm && can('add') && (
+        <form onSubmit={handleSubmit} style={cardStyle}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 18, fontFamily: 'var(--font-heading)' }}>
+            🥬 Record Daily Grocery Supply/Issue
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 16 }}>
+            <div>
+              <label style={labelStyle}>Item Name *</label>
+              <select style={selectStyle} required value={form.item} onChange={e => setForm({ ...form, item: e.target.value })}>
+                <option value="">Select item...</option>
+                {items.map(i => <option key={i._id} value={i._id}>{i.name} {i.nameTelugu ? `(${i.nameTelugu})` : ''} ({i.quantity} {i.uom} avail)</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Date of Issued *</label>
+              <input style={inputStyle} type="date" required value={form.dateIssued} onChange={e => setForm({ ...form, dateIssued: e.target.value })} />
+            </div>
+            <div>
+              <label style={labelStyle}>Quantity Issued *</label>
+              <input style={inputStyle} required type="number" step="0.01" min="0.01" placeholder="e.g. 10.5" value={form.quantityIssued} onChange={e => setForm({ ...form, quantityIssued: e.target.value })} />
+            </div>
+            <div>
+              <label style={labelStyle}>UOM</label>
+              <input style={{ ...inputStyle, background: 'var(--surface2)', opacity: 0.8 }} disabled placeholder="Auto-populated" value={form.uom} />
+            </div>
+            <div>
+              <label style={labelStyle}>Issued To *</label>
+              <input style={inputStyle} required placeholder="e.g. MAREYAMMA-MASTER" value={form.issuedTo} onChange={e => setForm({ ...form, issuedTo: e.target.value })} />
+            </div>
+            <div>
+              <label style={labelStyle}>Issued By *</label>
+              <input style={inputStyle} required placeholder="e.g. Murali krishna" value={form.issuedBy} onChange={e => setForm({ ...form, issuedBy: e.target.value })} />
+            </div>
+            <div>
+              <label style={labelStyle}>Purpose of Used</label>
+              <input style={inputStyle} placeholder="e.g. SAMBAR, TIFFIN, VEG CURRY" value={form.purposeOfUsed} onChange={e => setForm({ ...form, purposeOfUsed: e.target.value })} />
+            </div>
+            <div>
+              <label style={labelStyle}>Purpose of Using</label>
+              <input style={inputStyle} placeholder="e.g. Daily hostel cooking" value={form.purposeOfUsing} onChange={e => setForm({ ...form, purposeOfUsing: e.target.value })} />
+            </div>
+            <div style={{ gridColumn: 'span 2' }}>
+              <label style={labelStyle}>Particulars for Extra Cooking</label>
+              <input style={inputStyle} placeholder="e.g. FOR FFC PURPOSE 50 MEMBERS EXTRA TIFFIN,LUNCH" value={form.particularsExtraCooking} onChange={e => setForm({ ...form, particularsExtraCooking: e.target.value })} />
+            </div>
+          </div>
+          <button type="submit" disabled={submitting} style={btnPrimary}>
+            {submitting ? 'Saving...' : '✅ Save Grocery Issue'}
+          </button>
+        </form>
+      )}
+
+      {/* Table */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 30, color: 'var(--text3)' }}>Loading supplies data...</div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 30, color: 'var(--text3)' }}>No supplies logged yet.</div>
+      ) : (
+        <div style={{ ...cardStyle, padding: 0, overflow: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                {['Date Issued', 'Item Name', 'Qty Issued', 'UOM', 'Issued To', 'Issued By', 'Purpose of Used', 'Purpose of Using', 'Extra Cooking Particulars', can('delete') ? 'Actions' : ''].filter(Boolean).map((h, i) => (
+                  <th key={i} style={{ padding: '12px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.8px', background: 'var(--accent-subtle)' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(s => (
+                <tr key={s._id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>{new Date(s.dateIssued).toLocaleDateString('en-IN')}</td>
+                  <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--text)' }}>{s.itemName || s.item?.name || '—'}</td>
+                  <td style={{ padding: '12px 14px', fontWeight: 700 }}>{s.quantityIssued}</td>
+                  <td style={{ padding: '12px 14px', color: 'var(--text3)' }}>{s.uom || s.item?.uom || '—'}</td>
+                  <td style={{ padding: '12px 14px' }}>{s.issuedTo || '—'}</td>
+                  <td style={{ padding: '12px 14px' }}>{s.issuedBy || '—'}</td>
+                  <td style={{ padding: '12px 14px', fontSize: 11 }}>{s.purposeOfUsed || '—'}</td>
+                  <td style={{ padding: '12px 14px', fontSize: 11 }}>{s.purposeOfUsing || '—'}</td>
+                  <td style={{ padding: '12px 14px', fontSize: 11, color: 'var(--text2)' }}>{s.particularsExtraCooking || '—'}</td>
+                  {can('delete') && (
+                    <td style={{ padding: '12px 14px' }}>
+                      <button style={btnDanger} onClick={() => handleDelete(s._id)}>🗑️</button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // MAIN MESS PAGE
 // ═════════════════════════════════════════════════════════════════════════════
 export default function MessPage() {
-  const { can } = useAuth();
+  const { user, can } = useAuth();
   const [activeTab, setActiveTab] = useState('stock');
   const [showImport, setShowImport] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const triggerRefresh = () => setRefreshTrigger(prev => prev + 1);
 
-  const tabs = [
+  const allTabs = [
     { id: 'stock', label: 'Stock Catalog', emoji: '📦' },
     { id: 'purchases', label: 'Purchases', emoji: '💰' },
     { id: 'consumption', label: 'Consumption', emoji: '📋' },
     { id: 'menu', label: 'Weekly Menu', emoji: '🗓️' },
     { id: 'served-logs', label: 'Served Meals Log', emoji: '🍽️' },
     { id: 'forecast', label: 'AI Forecast', emoji: '🤖' },
+    { id: 'groceries-supplies', label: 'Daily Groceries Supplies', emoji: '🥬' },
   ];
 
+  const tabs = user?.role === 'mess_staff'
+    ? allTabs.filter(t => ['stock', 'served-logs', 'groceries-supplies'].includes(t.id))
+    : allTabs;
+
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto' }}>
+    <div className="page" style={{ maxWidth: 1400, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -1525,7 +1771,7 @@ export default function MessPage() {
             </p>
           </div>
         </div>
-        {can('add') && (
+        {can('delete') && (
           <button 
             onClick={() => setShowImport(true)} 
             style={{
@@ -1542,7 +1788,7 @@ export default function MessPage() {
       </div>
 
       {/* Tab Bar */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+      <div className="tab-container" style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
         {tabs.map(tab => (
           <TabButton
             key={tab.id}
@@ -1556,11 +1802,12 @@ export default function MessPage() {
 
       {/* Tab Content */}
       {activeTab === 'stock' && <StockCatalogTab key={`stock-${refreshTrigger}`} />}
-      {activeTab === 'purchases' && <PurchasesTab key={`purchases-${refreshTrigger}`} />}
-      {activeTab === 'consumption' && <ConsumptionLoggerTab key={`consumption-${refreshTrigger}`} />}
-      {activeTab === 'menu' && <WeeklyMenuTab key={`menu-${refreshTrigger}`} />}
+      {activeTab === 'purchases' && user?.role !== 'mess_staff' && <PurchasesTab key={`purchases-${refreshTrigger}`} />}
+      {activeTab === 'consumption' && user?.role !== 'mess_staff' && <ConsumptionLoggerTab key={`consumption-${refreshTrigger}`} />}
+      {activeTab === 'menu' && user?.role !== 'mess_staff' && <WeeklyMenuTab key={`menu-${refreshTrigger}`} />}
       {activeTab === 'served-logs' && <ServedMealsTab key={`served-${refreshTrigger}`} />}
-      {activeTab === 'forecast' && <AIForecastTab key={`forecast-${refreshTrigger}`} />}
+      {activeTab === 'forecast' && user?.role !== 'mess_staff' && <AIForecastTab key={`forecast-${refreshTrigger}`} />}
+      {activeTab === 'groceries-supplies' && <DailyGroceriesSuppliesTab key={`groceries-${refreshTrigger}`} />}
 
       {/* Import Modal */}
       {showImport && (

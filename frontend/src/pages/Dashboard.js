@@ -178,11 +178,6 @@ export default function Dashboard() {
   // Mess Snapshot computed values
   const messLowStock = messItems.filter(i => i.quantity <= i.threshold && i.quantity > 0).length;
   const messOutOfStock = messItems.filter(i => i.quantity <= 0).length;
-  const messExpiring = messItems.filter(i => {
-    if (!i.expiryDate) return false;
-    const diff = (new Date(i.expiryDate) - new Date()) / (1000 * 60 * 60 * 24);
-    return diff >= 0 && diff <= 3;
-  });
   const messStockValue = messItems.reduce((a, i) => a + (i.quantity * i.costPerUnit), 0);
   const todayDay = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   const todayMenu = messMenu.find(m => m.dayOfWeek === todayDay);
@@ -262,10 +257,7 @@ export default function Dashboard() {
             </a>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 16 }}>
-            <div style={{ padding: '14px 16px', borderRadius: 10, background: messExpiring.length > 0 ? 'rgba(240,64,64,0.08)' : 'var(--surface2)', border: '1px solid var(--border)' }}>
-              <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.5px' }}>Expiring Soon</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: messExpiring.length > 0 ? '#f04040' : 'var(--success)', fontFamily: 'Syne, sans-serif', marginTop: 2 }}>{messExpiring.length}</div>
-            </div>
+
             <div style={{ padding: '14px 16px', borderRadius: 10, background: messLowStock > 0 ? 'rgba(245,158,11,0.08)' : 'var(--surface2)', border: '1px solid var(--border)' }}>
               <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.5px' }}>Low Stock</div>
               <div style={{ fontSize: 22, fontWeight: 800, color: messLowStock > 0 ? '#f59e0b' : 'var(--success)', fontFamily: 'Syne, sans-serif', marginTop: 2 }}>{messLowStock}</div>
@@ -292,14 +284,7 @@ export default function Dashboard() {
               </div>
             </div>
           )}
-          {messExpiring.length > 0 && (
-            <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 8, background: 'rgba(240,64,64,0.06)', border: '1px solid rgba(240,64,64,0.2)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 16 }}>🚨</span>
-              <span style={{ fontSize: 11, color: '#f04040', fontWeight: 600 }}>
-                Expiring: {messExpiring.map(i => `${i.name} (${i.expiryDate})`).join(', ')}
-              </span>
-            </div>
-          )}
+
         </div>
       )}
 
@@ -342,7 +327,7 @@ export default function Dashboard() {
         {/* Tab: By Category */}
         {activeTab === 'overview' && (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24, alignItems: 'start' }}>
+        <div className="dashboard-chart-row" style={{ gap: 24, alignItems: 'start' }}>
               {/* Bar chart */}
               <div>
                 <p style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 12 }}>Purchase amount (₹) per segment — click a bar to drill down</p>
@@ -405,7 +390,7 @@ export default function Dashboard() {
         {activeTab === 'items' && (
           <div>
             <p style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 16 }}>Top 25 items by purchase amount (₹)</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+            <div className="grid-2-mobile-stack">
               {/* Horizontal bar chart */}
               <ResponsiveContainer width="100%" height={420}>
                 <BarChart data={itemCostData} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 10 }}>
@@ -474,7 +459,7 @@ export default function Dashboard() {
             {(!stats.departmentBreakdown || stats.departmentBreakdown.length === 0) ? (
               <div className="empty-state" style={{ padding: 40 }}>No distribution data available yet</div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24, alignItems: 'start' }}>
+              <div className="dashboard-chart-row" style={{ gap: 24, alignItems: 'start' }}>
                 {/* Bar chart for department quantities */}
                 <div>
                   <ResponsiveContainer width="100%" height={320}>
@@ -571,7 +556,7 @@ export default function Dashboard() {
             });
             const drillData = Object.values(itemMap).sort((a, b) => b.totalCost - a.totalCost).slice(0, 20);
             return (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+              <div className="grid-2-mobile-stack">
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={drillData} layout="vertical" margin={{ top: 4, right: 8, bottom: 4, left: 10 }}>
                     <XAxis type="number" tickFormatter={fmt} tick={{ fill: 'var(--text3)', fontSize: 10 }} />
@@ -629,7 +614,7 @@ export default function Dashboard() {
               return <div style={{ fontSize: 13, color: 'var(--text2)' }}>No items detail available.</div>;
             }
             return (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+              <div className="grid-2-mobile-stack">
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={deptData.topItems.slice(0, 15)} layout="vertical" margin={{ top: 4, right: 8, bottom: 4, left: 10 }}>
                     <XAxis type="number" tick={{ fill: 'var(--text3)', fontSize: 10 }} />

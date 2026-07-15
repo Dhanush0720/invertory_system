@@ -485,6 +485,9 @@ h1, h2, h3, h4, h5, .heading {
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.dashboard-chart-row { display: grid; grid-template-columns: 1fr 320px; }
+.grid-2-mobile-stack { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.tab-container { display: flex; gap: 8px; margin-bottom: 24px; }
 
 /* ═══ TABLES ═══════════════════════════════════════════════════════ */
 .table-wrap {
@@ -834,7 +837,8 @@ select.form-control option { background: var(--surface); color: var(--text); }
   .topbar { display: flex; position: sticky; top: 0; z-index: 90; }
   .sidebar-overlay { display: block; }
   
-  .stats-grid, .grid-2, .grid-3, .grid-4, .form-row, .form-row-3 { grid-template-columns: 1fr; }
+  .stats-grid, .grid-2, .grid-3, .form-row, .form-row-3, .dashboard-chart-row, .grid-2-mobile-stack { grid-template-columns: 1fr; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
   
   .page-header { flex-direction: column; align-items: stretch; gap: 16px; }
   .page-header > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -843,7 +847,27 @@ select.form-control option { background: var(--surface); color: var(--text); }
   .search-bar { flex-direction: column; align-items: stretch; gap: 10px; }
   .search-input-wrap { flex: none; width: 100%; }
   
-  .stat-card, .user-card { flex-direction: column; text-align: center; gap: 12px; }
+  .user-card { flex-direction: column; text-align: center; gap: 12px; }
+  .stat-card { padding: 12px 14px; gap: 10px; }
+  
+  .tab-container {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+  }
+  .tab-container::-webkit-scrollbar {
+    height: 4px;
+  }
+  .tab-container::-webkit-scrollbar-thumb {
+    background: var(--border2);
+    border-radius: 2px;
+  }
+  .tab-button {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
   
   .modal { padding: 24px 16px; max-width: calc(100% - 32px); margin: 16px; border-radius: var(--radius-lg); }
   

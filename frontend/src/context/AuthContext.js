@@ -44,7 +44,8 @@ export const AuthProvider = ({ children }) => {
     if (!user) return false;
     if (user.role === 'admin') return true;
     if (user.role === 'staff') return ['view', 'add', 'distribute'].includes(action);
-    if (user.role === 'mess') return ['view', 'add'].includes(action);
+    if (user.role === 'mess') return ['view', 'add', 'edit', 'delete', 'manage_menu'].includes(action);
+    if (user.role === 'mess_staff') return ['view', 'add', 'edit'].includes(action);
     if (user.role === 'viewer') return action === 'view';
     return false;
   };

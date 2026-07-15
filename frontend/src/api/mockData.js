@@ -13,15 +13,70 @@ const MOCK_MESS_LOGS_KEY = 'demo_mess_logs';
 const MOCK_MESS_MENU_KEY = 'demo_mess_menu';
 const MOCK_MESS_PURCHASES_KEY = 'demo_mess_purchases';
 const MOCK_MESS_SERVED_LOGS_KEY = 'demo_mess_served_logs';
+const MOCK_MESS_GROCERIES_SUPPLIES_KEY = 'demo_groceries_supplies';
+
+function normalizeUOM(uom) {
+  if (!uom) return 'Kg';
+  const norm = uom.toString().trim().toLowerCase();
+  if (norm === 'kg' || norm === 'kgs' || norm === 'kilogram' || norm === 'kilograms') return 'Kg';
+  if (norm === 'litre' || norm === 'litres' || norm === 'liter' || norm === 'liters' || norm === 'l') return 'Litre';
+  if (norm === 'pack' || norm === 'packet' || norm === 'packets' || norm === 'packs') return 'Pack';
+  if (norm === 'bag' || norm === 'bags') return 'Bag';
+  if (norm === 'nos' || norm === 'no' || norm === 'number' || norm === 'numbers' || norm === 'pcs' || norm === 'pieces') return 'Nos';
+  
+  const matched = ['Kg', 'Litre', 'Pack', 'Bag', 'Nos'].find(val => val.toLowerCase() === norm);
+  if (matched) return matched;
+  return 'Kg';
+}
+
+function normalizeCategory(cat) {
+  if (!cat) return 'OTHER';
+  const norm = cat.toString().trim().toUpperCase();
+  const valid = ['GROCERY', 'VEGETABLE', 'DAIRY', 'MEAT', 'SPICE', 'FRUIT', 'OTHER'];
+  if (valid.includes(norm)) return norm;
+  if (norm === 'FRUITS') return 'FRUIT';
+  return 'OTHER';
+}
 
 const INITIAL_MESS_ITEMS = [
-  { _id: 'mi-1', name: 'Basmati Rice', category: 'GROCERY', quantity: 250, uom: 'Kg', threshold: 50, costPerUnit: 75, expiryDate: '2027-06-01' },
-  { _id: 'mi-2', name: 'Fresh Potatoes', category: 'VEGETABLE', quantity: 80, uom: 'Kg', threshold: 20, costPerUnit: 30, expiryDate: new Date(Date.now() + 5*24*60*60*1000).toISOString().split('T')[0] },
-  { _id: 'mi-3', name: 'Fresh Tomatoes', category: 'VEGETABLE', quantity: 15, uom: 'Kg', threshold: 10, costPerUnit: 40, expiryDate: new Date(Date.now() + 2*24*60*60*1000).toISOString().split('T')[0] },
-  { _id: 'mi-4', name: 'Fresh Onions', category: 'VEGETABLE', quantity: 60, uom: 'Kg', threshold: 15, costPerUnit: 35, expiryDate: new Date(Date.now() + 10*24*60*60*1000).toISOString().split('T')[0] },
-  { _id: 'mi-5', name: 'Fresh Milk', category: 'DAIRY', quantity: 4, uom: 'Litre', threshold: 10, costPerUnit: 60, expiryDate: new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0] },
-  { _id: 'mi-6', name: 'Refined Sunflower Oil', category: 'GROCERY', quantity: 50, uom: 'Litre', threshold: 15, costPerUnit: 120, expiryDate: '2026-12-31' },
-  { _id: 'mi-7', name: 'Toor Dal (Lentils)', category: 'GROCERY', quantity: 100, uom: 'Kg', threshold: 20, costPerUnit: 140, expiryDate: '2027-01-01' }
+  { _id: 'mi-1', name: 'Basmati Rice', category: 'GROCERY', quantity: 220, uom: 'Kg', threshold: 50, costPerUnit: 75 },
+  { _id: 'mi-2', name: 'Fresh Potatoes', category: 'VEGETABLE', quantity: 65, uom: 'Kg', threshold: 20, costPerUnit: 30 },
+  { _id: 'mi-3', name: 'Fresh Tomatoes', category: 'VEGETABLE', quantity: 15, uom: 'Kg', threshold: 10, costPerUnit: 40 },
+  { _id: 'mi-4', name: 'Fresh Onions', category: 'VEGETABLE', quantity: 60, uom: 'Kg', threshold: 15, costPerUnit: 35 },
+  { _id: 'mi-5', name: 'Fresh Milk', category: 'DAIRY', quantity: 4, uom: 'Litre', threshold: 10, costPerUnit: 60 },
+  { _id: 'mi-6', name: 'Refined Sunflower Oil', category: 'GROCERY', quantity: 50, uom: 'Litre', threshold: 15, costPerUnit: 120 },
+  { _id: 'mi-7', name: 'Toor Dal (Lentils)', category: 'GROCERY', quantity: 100, uom: 'Kg', threshold: 20, costPerUnit: 140 }
+];
+
+const INITIAL_GROCERIES_SUPPLIES = [
+  {
+    _id: 'mgs-1',
+    itemName: 'Basmati Rice',
+    item: { _id: 'mi-1', name: 'Basmati Rice', category: 'GROCERY', uom: 'Kg' },
+    dateIssued: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    uom: 'Kg',
+    quantityIssued: 30,
+    purposeOfUsed: 'SAMBAR RICE',
+    purposeOfUsing: 'Lunch cooking for students',
+    issuedTo: 'MAREYAMMA-MASTER',
+    issuedBy: 'Murali krishna',
+    particularsExtraCooking: 'Regular hostel lunch',
+    recordedBy: { name: 'Guest Explorer', email: 'guest@demo.com' }
+  },
+  {
+    _id: 'mgs-2',
+    itemName: 'Fresh Potatoes',
+    item: { _id: 'mi-2', name: 'Fresh Potatoes', category: 'VEGETABLE', uom: 'Kg' },
+    dateIssued: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    uom: 'Kg',
+    quantityIssued: 15,
+    purposeOfUsed: 'POTATO CURRY',
+    purposeOfUsing: 'Dinner curry preparation',
+    issuedTo: 'MAREYAMMA-MASTER',
+    issuedBy: 'Murali krishna',
+    particularsExtraCooking: 'Regular hostel dinner',
+    recordedBy: { name: 'Guest Explorer', email: 'guest@demo.com' }
+  }
 ];
 
 const INITIAL_MESS_LOGS = [
@@ -180,6 +235,7 @@ export const initDemoDb = (force = false) => {
     localStorage.setItem(MOCK_MESS_MENU_KEY, JSON.stringify(INITIAL_MESS_MENU));
     localStorage.setItem(MOCK_MESS_PURCHASES_KEY, JSON.stringify([]));
     localStorage.setItem(MOCK_MESS_SERVED_LOGS_KEY, JSON.stringify([]));
+    localStorage.setItem(MOCK_MESS_GROCERIES_SUPPLIES_KEY, JSON.stringify(INITIAL_GROCERIES_SUPPLIES));
   }
 };
 
@@ -606,21 +662,6 @@ export const mockAlertsAPI = {
           action_code: 'AUDIT',
           item_id: item._id
         });
-      }
-      // Expiry alerts
-      if (item.expiryDate) {
-        const daysUntilExpiry = (new Date(item.expiryDate) - new Date()) / (1000 * 60 * 60 * 24);
-        if (daysUntilExpiry >= 0 && daysUntilExpiry <= 3) {
-          messAlerts.push({
-            _id: `mess-alert-exp-${item._id}`,
-            severity: 'High',
-            issue_type: 'Perishable Expiring',
-            message: `⏰ "${item.name}" expires on ${item.expiryDate} — only ${Math.ceil(daysUntilExpiry)} day(s) left! ${item.quantity} ${item.uom} at risk of spoilage.`,
-            recommended_action: `Prioritize using ${item.name} in today's meals or redistribute to avoid waste.`,
-            action_code: 'AUDIT',
-            item_id: item._id
-          });
-        }
       }
     });
     return simulateLatency([...alerts, ...messAlerts]);
@@ -1060,23 +1101,16 @@ export const mockMessAPI = {
         const name = (row.name || '').toString().trim();
         if (!name) throw new Error('Item name is required');
 
-        const category = (row.category || 'OTHER').toString().toUpperCase().trim();
+        const category = normalizeCategory(row.category);
         const quantity = parseFloat(row.quantity) || 0;
-        const uom = (row.uom || 'Kg').toString().trim();
+        const uom = normalizeUOM(row.uom);
         const threshold = parseFloat(row.threshold) || 5;
         const costPerUnit = parseFloat(row.costPerUnit) || 0;
         const nameTelugu = (row.nameTelugu || '').toString().trim() || undefined;
-        const packingQuantity = parseFloat(row.packingQuantity) || 0;
-        const dateOfVerified = row.dateOfVerified || undefined;
-        const expiryDate = row.expiryDate || undefined;
-
         const idx = list.findIndex(item => item.name.toLowerCase() === name.toLowerCase());
         if (idx !== -1) {
           list[idx].quantity += quantity;
           if (nameTelugu) list[idx].nameTelugu = nameTelugu;
-          if (packingQuantity) list[idx].packingQuantity = packingQuantity;
-          if (dateOfVerified) list[idx].dateOfVerified = dateOfVerified;
-          if (expiryDate) list[idx].expiryDate = expiryDate;
           if (costPerUnit) list[idx].costPerUnit = costPerUnit;
         } else {
           list.unshift({
@@ -1087,10 +1121,7 @@ export const mockMessAPI = {
             quantity,
             uom,
             threshold,
-            costPerUnit,
-            packingQuantity,
-            dateOfVerified,
-            expiryDate
+            costPerUnit
           });
         }
         imported++;
@@ -1117,9 +1148,7 @@ export const mockMessAPI = {
         if (!itemName) throw new Error('Item Name is required');
 
         const quantityPurchased = parseFloat(row.quantityPurchased) || 0;
-        if (quantityPurchased <= 0) throw new Error('Quantity purchased must be greater than 0');
-
-        const uom = (row.uom || 'Kg').toString().trim();
+        const uom = normalizeUOM(row.uom);
         const unitPrice = parseFloat(row.unitPrice) || 0;
         const purchaseDate = row.purchaseDate || new Date().toISOString();
         const billNo = (row.billNo || '').toString().trim() || undefined;
@@ -1134,7 +1163,7 @@ export const mockMessAPI = {
             name: itemName,
             category: 'OTHER',
             quantity: 0,
-            uom,
+            uom: uom,
             threshold: 5
           };
           items.unshift(itemDoc);
@@ -1184,8 +1213,6 @@ export const mockMessAPI = {
 
         const qtyUsed = parseFloat(row.qtyUsed) || 0;
         const qtySpoiled = parseFloat(row.qtySpoiled) || 0;
-        if (qtyUsed <= 0 && qtySpoiled <= 0) throw new Error('Quantity used/spoiled must be greater than 0');
-
         const date = row.date || new Date().toISOString();
         const mealType = (row.mealType || 'GENERAL').toString().toUpperCase().trim();
         const reason = (row.reason || '').toString().trim() || undefined;
@@ -1193,7 +1220,7 @@ export const mockMessAPI = {
         const issuedTo = (row.issuedTo || '').toString().trim() || undefined;
         const purposeOfUsed = (row.purposeOfUsed || '').toString().trim() || undefined;
         const particulars = (row.particulars || '').toString().trim() || undefined;
-        const uom = (row.uom || 'Kg').toString().trim();
+        const uom = normalizeUOM(row.uom);
 
         let itemDoc = items.find(it => it.name.toLowerCase() === itemName.toLowerCase());
         if (!itemDoc) {
@@ -1290,6 +1317,121 @@ export const mockMessAPI = {
 
     setCollection(MOCK_MESS_SERVED_LOGS_KEY, list);
     addAuditLog('MESS_BULK_SERVED', `Imported ${imported} served meal logs in batch`);
+    return simulateLatency({ imported, failed, errors });
+  },
+  getGroceriesSupplies: () => {
+    return simulateLatency(getCollection(MOCK_MESS_GROCERIES_SUPPLIES_KEY));
+  },
+  createGroceriesSupply: (data) => {
+    const list = getCollection(MOCK_MESS_GROCERIES_SUPPLIES_KEY);
+    const items = getCollection(MOCK_MESS_ITEMS_KEY);
+    const { item: itemId, dateIssued, quantityIssued, purposeOfUsed, purposeOfUsing, issuedTo, issuedBy, particularsExtraCooking } = data;
+
+    const matchIdx = items.findIndex(i => i._id === itemId);
+    if (matchIdx === -1) return Promise.reject({ response: { data: { message: 'Item not found in catalog' } } });
+
+    const matchedItem = items[matchIdx];
+    if (matchedItem.quantity < Number(quantityIssued)) {
+      return Promise.reject({ response: { data: { message: `Insufficient stock for ${matchedItem.name}! Available: ${matchedItem.quantity}, Requested: ${quantityIssued}` } } });
+    }
+
+    // Decrement stock
+    items[matchIdx].quantity -= Number(quantityIssued);
+    setCollection(MOCK_MESS_ITEMS_KEY, items);
+
+    const newSupply = {
+      _id: `mgs-${Date.now()}`,
+      itemName: matchedItem.name,
+      item: { _id: itemId, name: matchedItem.name, category: matchedItem.category, uom: matchedItem.uom },
+      dateIssued: dateIssued || new Date().toISOString(),
+      uom: matchedItem.uom,
+      quantityIssued: Number(quantityIssued),
+      purposeOfUsed,
+      purposeOfUsing,
+      issuedTo,
+      issuedBy,
+      particularsExtraCooking,
+      recordedBy: { name: 'Guest Explorer', email: 'guest@nirvahana.com' }
+    };
+
+    list.unshift(newSupply);
+    setCollection(MOCK_MESS_GROCERIES_SUPPLIES_KEY, list);
+    addAuditLog('MESS_GROCERIES_SUPPLY', `Issued ${quantityIssued} ${matchedItem.uom} of ${matchedItem.name} to ${issuedTo}`);
+    return simulateLatency(newSupply);
+  },
+  deleteGroceriesSupply: (id) => {
+    let list = getCollection(MOCK_MESS_GROCERIES_SUPPLIES_KEY);
+    const supply = list.find(s => s._id === id);
+    if (!supply) return Promise.reject({ response: { data: { message: 'Groceries supply record not found' } } });
+
+    // Increment stock back
+    const items = getCollection(MOCK_MESS_ITEMS_KEY);
+    const itemId = supply.item._id || supply.item;
+    const matchIdx = items.findIndex(i => i._id === itemId);
+    if (matchIdx !== -1) {
+      items[matchIdx].quantity += Number(supply.quantityIssued);
+      setCollection(MOCK_MESS_ITEMS_KEY, items);
+    }
+
+    list = list.filter(s => s._id !== id);
+    setCollection(MOCK_MESS_GROCERIES_SUPPLIES_KEY, list);
+    addAuditLog('MESS_GROCERIES_SUPPLY_DELETE', `Deleted grocery supply record and reverted stock`);
+    return simulateLatency({ message: 'Groceries supply record deleted' });
+  },
+  bulkImportGroceriesSupplies: (data) => {
+    const list = getCollection(MOCK_MESS_GROCERIES_SUPPLIES_KEY);
+    const items = getCollection(MOCK_MESS_ITEMS_KEY);
+    let imported = 0;
+    let failed = 0;
+    const errors = [];
+
+    data.forEach((row, i) => {
+      try {
+        const itemName = (row.itemName || '').toString().trim();
+        if (!itemName) throw new Error('Item Name is required');
+
+        const quantityIssued = !isNaN(Number(row.quantityIssued)) && Number(row.quantityIssued) > 0 ? Number(row.quantityIssued) : 1;
+        const issuedTo = (row.issuedTo || 'N/A').toString().trim();
+        const issuedBy = (row.issuedBy || 'N/A').toString().trim();
+        const dateIssued = row.dateIssued || new Date().toISOString();
+
+        const matchIdx = items.findIndex(item => item.name.toLowerCase() === itemName.toLowerCase());
+        if (matchIdx === -1) throw new Error(`Item "${itemName}" not found in catalog`);
+
+        const matchedItem = items[matchIdx];
+        if (matchedItem.quantity < quantityIssued) {
+          throw new Error(`Insufficient stock: available ${matchedItem.quantity} ${matchedItem.uom}, requested ${quantityIssued}`);
+        }
+
+        // Decrement stock
+        items[matchIdx].quantity -= quantityIssued;
+
+        const newSupply = {
+          _id: `mgs-${Date.now()}-${i}`,
+          itemName: matchedItem.name,
+          item: { _id: matchedItem._id, name: matchedItem.name, category: matchedItem.category, uom: matchedItem.uom },
+          dateIssued,
+          uom: matchedItem.uom,
+          quantityIssued,
+          purposeOfUsed: row.purposeOfUsed || '',
+          purposeOfUsing: row.purposeOfUsing || '',
+          issuedTo,
+          issuedBy,
+          particularsExtraCooking: row.particularsExtraCooking || '',
+          recordedBy: { name: 'Guest Explorer', email: 'guest@demo.com' }
+        };
+
+        list.unshift(newSupply);
+        imported++;
+      } catch (err) {
+        failed++;
+        errors.push({ row: i + 1, itemName: row.itemName || '—', reason: err.message });
+      }
+    });
+
+    setCollection(MOCK_MESS_ITEMS_KEY, items);
+    setCollection(MOCK_MESS_GROCERIES_SUPPLIES_KEY, list);
+    addAuditLog('MESS_BULK_GROCERIES_SUPPLIES', `Imported ${imported} groceries supplies in batch`);
     return simulateLatency({ imported, failed, errors });
   }
 };

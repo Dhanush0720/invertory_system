@@ -34,7 +34,7 @@ export default function Layout() {
   }, [sidebarCollapsed]);
 
   useEffect(() => {
-    if (user?.role === 'mess' && location.pathname !== '/mess') {
+    if ((user?.role === 'mess' || user?.role === 'mess_staff') && location.pathname !== '/mess') {
       navigate('/mess', { replace: true });
     }
   }, [user, location.pathname, navigate]);
@@ -62,7 +62,7 @@ export default function Layout() {
     : adminItems;
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-  const roleColors = { admin: 'var(--accent)', staff: 'var(--info)', viewer: 'var(--purple)' };
+  const roleColors = { admin: 'var(--accent)', staff: 'var(--info)', viewer: 'var(--purple)', mess: 'var(--accent)', mess_staff: '#ec4899' };
   const roleColor = roleColors[user?.role] || 'var(--text3)';
 
   return (
@@ -110,7 +110,7 @@ export default function Layout() {
         <nav className="nav-section">
           <div className="nav-label">Main Navigation</div>
           {navItems.filter(item => {
-            if (user?.role === 'mess') {
+            if (user?.role === 'mess' || user?.role === 'mess_staff') {
               return item.to === '/mess';
             }
             return true;

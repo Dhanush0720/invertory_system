@@ -175,6 +175,7 @@ export default function UsersPage() {
                   <option value="staff">📦 Staff / Estate Manager — Add & distribute</option>
                   <option value="viewer">👁️ Viewer — Read only</option>
                   <option value="mess">🍽️ Mess Manager — Mess module only</option>
+                  <option value="mess_staff">🍳 Mess Staff — Limited mess modules</option>
                 </select>
               </div>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
