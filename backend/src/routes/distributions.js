@@ -77,6 +77,10 @@ router.post('/', protect, authorize('admin', 'staff'), async (req, res) => {
       });
     }
 
+    // Update cached stock remaining in the Item document
+    item.quantityRemaining = (item.quantityRemaining !== undefined ? item.quantityRemaining : remaining) - requestedQty;
+    await item.save();
+
     const distribution = await Distribution.create({
       ...payload,
       distributedBy: req.user._id
@@ -109,8 +113,17 @@ router.post('/', protect, authorize('admin', 'staff'), async (req, res) => {
 // DELETE /api/distributions/:id — admin only
 router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
-    const dist = await Distribution.findByIdAndDelete(req.params.id);
+    const dist = await Distribution.findById(req.params.id);
     if (!dist) return res.status(404).json({ message: 'Distribution record not found' });
+
+    // Restore cached remaining stock on deletion
+    const item = await Item.findById(dist.item);
+    if (item) {
+      item.quantityRemaining = (item.quantityRemaining !== undefined ? item.quantityRemaining : item.quantityPurchased) + dist.quantityDistributed;
+      await item.save();
+    }
+
+    await dist.deleteOne();
 
     await AuditLog.create({
       item: dist.item,
@@ -138,6 +151,13 @@ router.post('/:id/return', protect, authorize('admin', 'staff'), async (req, res
 
     if (returnQty > dist.quantityDistributed) {
       return res.status(400).json({ message: `Cannot return ${returnQty}. Only ${dist.quantityDistributed} were distributed.` });
+    }
+
+    // Restore cached remaining stock in the Item document
+    const item = await Item.findById(dist.item);
+    if (item) {
+      item.quantityRemaining = (item.quantityRemaining !== undefined ? item.quantityRemaining : item.quantityPurchased) + returnQty;
+      await item.save();
     }
 
     dist.quantityDistributed -= returnQty;

@@ -341,10 +341,54 @@ export const mockAuthAPI = {
   me: () => {
     const user = JSON.parse(localStorage.getItem('user')) || { id: 'demo-user-id', name: 'Guest Explorer', email: 'guest@demo.com', role: 'admin' };
     return simulateLatency(user);
+  },
+  forgotPassword: (email) => {
+    const list = getCollection(MOCK_USERS_KEY);
+    const user = list.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!user) {
+      return simulateLatency({ message: 'If an account exists with that email, a password reset link has been generated.' });
+    }
+    const token = `demo-token-${Date.now()}`;
+    const url = `${window.location.origin}/reset-password/${token}`;
+    
+    localStorage.setItem('demo_reset_token', token);
+    localStorage.setItem('demo_reset_email', email);
+    
+    setTimeout(() => {
+      alert(`[Demo Mode Recovery Link]:\n\n${url}`);
+    }, 450);
+    
+    return simulateLatency({ message: 'Recovery link generated. Check the browser popup alert!' });
+  },
+  resetPassword: (token, password) => {
+    const savedToken = localStorage.getItem('demo_reset_token');
+    const savedEmail = localStorage.getItem('demo_reset_email');
+    if (!savedToken || savedToken !== token) {
+      return Promise.reject({ response: { data: { message: 'Invalid or expired recovery token.' } } });
+    }
+    
+    const list = getCollection(MOCK_USERS_KEY);
+    const idx = list.findIndex(u => u.email.toLowerCase() === savedEmail.toLowerCase());
+    if (idx !== -1) {
+      list[idx].password = password;
+      setCollection(MOCK_USERS_KEY, list);
+    }
+    
+    localStorage.removeItem('demo_reset_token');
+    localStorage.removeItem('demo_reset_email');
+    return simulateLatency({ message: 'Password reset successful!' });
   }
 };
 
 export const mockItemsAPI = {
+  autocomplete: (q) => {
+    let list = getCollection(MOCK_ITEMS_KEY);
+    if (q) {
+      const query = q.toLowerCase();
+      list = list.filter(i => i.itemName.toLowerCase().includes(query));
+    }
+    return simulateLatency(list.slice(0, 10));
+  },
   getAll: (params = {}) => {
     let list = getCollection(MOCK_ITEMS_KEY);
     const dists = getCollection(MOCK_DISTS_KEY);

@@ -36,6 +36,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/reset-password/:token" element={<LoginPage />} />
           <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
             <Route index element={
               <Suspense fallback={<PageLoader />}><Dashboard /></Suspense>

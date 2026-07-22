@@ -14,6 +14,7 @@ const itemSchema = new mongoose.Schema({
   shopName:         { type: String, trim: true },
   particulars:      { type: String, trim: true },
   lowStockThreshold:{ type: Number, default: 5 },
+  quantityRemaining:{ type: Number },
 
   // === ESTATE MANAGER EXTENSIONS ===
   assetType:           { type: String, enum: ['Fixed Asset', 'Consumable'], default: 'Consumable' },
@@ -37,10 +38,13 @@ itemSchema.index({ assetType: 1 });
 itemSchema.index({ itemName: 'text', company: 'text', shopName: 'text', particulars: 'text' });
 itemSchema.index({ qrCodeId: 1 }, { unique: true, sparse: true }); // sparse allows multiple null values
 
-// Auto-calculate totalCost
+// Auto-calculate totalCost & set initial remaining stock
 itemSchema.pre('save', function (next) {
   if (this.quantityPurchased && this.unitPrice) {
     this.totalCost = parseFloat((this.quantityPurchased * this.unitPrice).toFixed(2));
+  }
+  if (this.isNew && this.quantityRemaining === undefined) {
+    this.quantityRemaining = this.quantityPurchased;
   }
   next();
 });

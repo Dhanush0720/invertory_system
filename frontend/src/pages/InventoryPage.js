@@ -186,6 +186,21 @@ export default function InventoryPage() {
     finally { setSaving(false); }
   };
 
+  const handleItemNameChange = async (val) => {
+    setForm(prev => ({ ...prev, itemName: val }));
+    if (val.trim().length >= 2) {
+      try {
+        const res = await itemsAPI.autocomplete(val);
+        setSuggestions(prev => ({
+          ...prev,
+          itemNames: res.data.map(i => i.itemName)
+        }));
+      } catch (err) {
+        console.warn('Autocomplete lookup failed', err);
+      }
+    }
+  };
+
   const handleQtyChange = (e) => {
     const val = e.target.value;
     const qty = parseFloat(val);
@@ -587,7 +602,7 @@ export default function InventoryPage() {
                 </div>
                 <div className="form-group" style={{ flex: 2 }}>
                   <label className="form-label">Item Name *</label>
-                  <input className="form-control" list="item-names-list" placeholder="e.g. A4 BUNDLES" value={form.itemName} onChange={e => setForm({ ...form, itemName: e.target.value })} required />
+                  <input className="form-control" list="item-names-list" placeholder="e.g. A4 BUNDLES" value={form.itemName} onChange={e => handleItemNameChange(e.target.value)} required />
                   <datalist id="item-names-list">
                     {suggestions.itemNames.map((name, i) => <option key={i} value={name} />)}
                   </datalist>

@@ -18,6 +18,12 @@ export default function DistributionsPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  // Custom Return Modal State
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnTarget, setReturnTarget] = useState(null);
+  const [returnQty, setReturnQty] = useState('');
+  const [returnError, setReturnError] = useState('');
+
   const debouncedSearch = useDebounce(search, 400);
 
   const fetchDists = useCallback(async () => {
@@ -43,20 +49,27 @@ export default function DistributionsPage() {
     } catch (err) { alert('Delete failed'); }
   };
 
-  const handleReturn = async (id, maxQty) => {
-    const rawQty = window.prompt(`How many units do you want to return to stock? (Max: ${maxQty})`);
-    if (!rawQty) return;
-    const qty = Number(rawQty);
-    if (isNaN(qty) || qty <= 0 || qty > maxQty) {
-      alert("Invalid quantity. Must be a number between 1 and " + maxQty);
+  const handleReturn = (id, maxQty, itemName) => {
+    setReturnTarget({ id, maxQty, itemName });
+    setReturnQty('');
+    setReturnError('');
+    setShowReturnModal(true);
+  };
+
+  const submitReturn = async (e) => {
+    e.preventDefault();
+    setReturnError('');
+    const qty = Number(returnQty);
+    if (isNaN(qty) || qty <= 0 || qty > returnTarget.maxQty) {
+      setReturnError(`Invalid quantity. Must be between 1 and ${returnTarget.maxQty}`);
       return;
     }
     try {
-      await distributionsAPI.returnItem(id, qty);
+      await distributionsAPI.returnItem(returnTarget.id, qty);
+      setShowReturnModal(false);
       fetchDists();
-      alert(`Successfully returned ${qty} units back to stock!`);
     } catch (err) {
-      alert(err.response?.data?.message || 'Return failed');
+      setReturnError(err.response?.data?.message || 'Return failed');
     }
   };
 
@@ -290,7 +303,7 @@ export default function DistributionsPage() {
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
                         {(user?.role === 'admin' || user?.role === 'staff') && (
-                          <button className="btn btn-primary btn-sm" onClick={() => handleReturn(d._id, d.quantityDistributed)}>↩️ Return</button>
+                          <button className="btn btn-primary btn-sm" onClick={() => handleReturn(d._id, d.quantityDistributed, d.item?.itemName)}>↩️ Return</button>
                         )}
                         {user?.role === 'admin' && (
                           <button className="btn btn-danger btn-sm" onClick={() => handleDelete(d._id)}>🗑️</button>
@@ -304,6 +317,52 @@ export default function DistributionsPage() {
           )}
         </div>
       </div>
+      {/* ── CUSTOM RETURN TO STOCK MODAL ── */}
+      {showReturnModal && returnTarget && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowReturnModal(false)}>
+          <div className="modal" style={{ maxWidth: 440, animation: 'fadeIn 0.3s ease' }}>
+            <div className="modal-header">
+              <h3 className="modal-title">🔄 Return Items to Stock</h3>
+              <button className="modal-close" onClick={() => setShowReturnModal(false)}>✕</button>
+            </div>
+            
+            {returnError && <div className="alert alert-error" style={{ marginBottom: 14 }}>⚠️ {returnError}</div>}
+            
+            <form onSubmit={submitReturn}>
+              <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: '8px', background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 13, color: 'var(--text2)', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Item Name:</span>
+                  <span style={{ fontWeight: 600, color: 'var(--text)' }}>{returnTarget.itemName || '—'}</span>
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--text2)', display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+                  <span>Distributed Qty:</span>
+                  <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{returnTarget.maxQty}</span>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600, marginBottom: 8 }}>Quantity to Return (Max: {returnTarget.maxQty})</label>
+                <input 
+                  type="number" 
+                  className="form-control" 
+                  min="1" 
+                  max={returnTarget.maxQty} 
+                  placeholder="Enter number of units"
+                  value={returnQty}
+                  onChange={e => setReturnQty(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+                <button type="button" className="btn btn-secondary" style={{ cursor: 'pointer' }} onClick={() => setShowReturnModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" style={{ cursor: 'pointer' }}>Return Stock</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

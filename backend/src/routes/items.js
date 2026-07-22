@@ -43,13 +43,9 @@ router.get('/', protect, async (req, res) => {
       Item.countDocuments(query)
     ]);
 
-    // Single batch aggregation over fetched page only — O(1) DB calls instead of N
-    const itemIds = items.map(i => i._id);
-    const distMap = await buildDistMap(itemIds);
-
     const itemsWithStock = items.map(item => {
-      const distributed = distMap[item._id.toString()] || 0;
-      const remaining = item.quantityPurchased - distributed;
+      const remaining = item.quantityRemaining !== undefined ? item.quantityRemaining : item.quantityPurchased;
+      const distributed = item.quantityPurchased - remaining;
       return {
         ...item.toObject(),
         quantityDistributed: distributed,
@@ -69,14 +65,43 @@ router.get('/', protect, async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+// GET /api/items/autocomplete
+router.get('/autocomplete', protect, async (req, res) => {
+  try {
+    const q = req.query.q || '';
+    if (!q.trim()) return res.json([]);
+    const results = await Item.find({ itemName: { $regex: q, $options: 'i' } })
+      .select('itemName segment company uom')
+      .limit(10)
+      .lean();
+    
+    const unique = [];
+    const seen = new Set();
+    for (const item of results) {
+      if (!seen.has(item.itemName.toLowerCase())) {
+        seen.add(item.itemName.toLowerCase());
+        unique.push(item);
+      }
+    }
+    
+    res.json(unique);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // GET /api/items/:id
 router.get('/:id', protect, async (req, res) => {
   try {
     const item = await Item.findById(req.params.id).populate('addedBy', 'name');
     if (!item) return res.status(404).json({ message: 'Item not found' });
-    const distMap = await buildDistMap([item._id]);
-    const distributed = distMap[item._id.toString()] || 0;
-    res.json({ ...item.toObject(), quantityDistributed: distributed, quantityRemaining: item.quantityPurchased - distributed });
+    const remaining = item.quantityRemaining !== undefined ? item.quantityRemaining : item.quantityPurchased;
+    const distributed = item.quantityPurchased - remaining;
+    res.json({ 
+      ...item.toObject(), 
+      quantityDistributed: distributed, 
+      quantityRemaining: remaining 
+    });
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
@@ -111,6 +136,8 @@ router.put('/:id', protect, authorize('admin', 'staff'), async (req, res) => {
       if (!varianceReason || typeof varianceReason !== 'string' || !varianceReason.trim()) {
         return res.status(400).json({ message: 'Variance reason is mandatory when adjusting stock quantity.' });
       }
+      const diff = payload.quantityPurchased - existingItem.quantityPurchased;
+      payload.quantityRemaining = (existingItem.quantityRemaining !== undefined ? existingItem.quantityRemaining : existingItem.quantityPurchased) + diff;
     }
 
     const item = await Item.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true });
@@ -174,6 +201,7 @@ router.post('/bulk-import', protect, authorize('admin', 'staff'), async (req, re
         const unitPrice = parseFloat(row.unitPrice) || 0;
         const totalCost = row.totalCost ? parseFloat(row.totalCost) : quantityPurchased * unitPrice;
 
+        const distQty = parseFloat(row.quantityDistributed) || 0;
         const doc = {
           segment: (row.segment || row.category || 'OTHER').toString().trim(),
           itemName,
@@ -186,10 +214,9 @@ router.post('/bulk-import', protect, authorize('admin', 'staff'), async (req, re
           totalCost,
           shopName: (row.shopName || '').toString().trim() || undefined,
           particulars: (row.particulars || '').toString().trim() || undefined,
-          addedBy: req.user._id
+          addedBy: req.user._id,
+          quantityRemaining: quantityPurchased - (distQty > 0 && distQty <= quantityPurchased ? distQty : 0)
         };
-
-        const distQty = parseFloat(row.quantityDistributed) || 0;
         toInsert.push({ doc, row: i + 1, distQty, rawRow: row, dateOfPurchase });
       } catch (err) {
         failed.push({ row: i + 1, itemName: (row.itemName || '—'), reason: err.message });

@@ -43,10 +43,13 @@ export const authAPI = {
   login: (data) => isDemo() ? mockAuthAPI.login(data) : API.post('/auth/login', data),
   register: (data) => isDemo() ? mockAuthAPI.register(data) : API.post('/auth/register', data),
   me: () => isDemo() ? mockAuthAPI.me() : API.get('/auth/me'),
+  forgotPassword: (email) => isDemo() ? mockAuthAPI.forgotPassword(email) : API.post('/auth/forgot-password', { email }),
+  resetPassword: (token, password) => isDemo() ? mockAuthAPI.resetPassword(token, password) : API.post(`/auth/reset-password/${token}`, { password }),
 };
 
 export const itemsAPI = {
   getAll: (params) => isDemo() ? mockItemsAPI.getAll(params) : API.get('/items', { params }),
+  autocomplete: (q) => isDemo() ? mockItemsAPI.autocomplete(q) : API.get('/items/autocomplete', { params: { q } }),
   getOne: (id) => isDemo() ? mockItemsAPI.getOne(id) : API.get(`/items/${id}`),
   create: (data) => isDemo() ? mockItemsAPI.create(data) : API.post('/items', data),
   update: (id, data) => isDemo() ? mockItemsAPI.update(id, data) : API.put(`/items/${id}`, data),

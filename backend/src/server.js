@@ -85,6 +85,7 @@ app.use('/api/alerts', require('./routes/alertRoutes'));
 app.use('/api/agents', require('./routes/agentRoutes'));
 app.use('/api/uploads', require('./routes/uploadRoutes'));
 app.use('/api/audit', require('./routes/audit'));
+app.use('/api/jobs', require('./routes/jobs'));
 
 app.get('/', (req, res) => res.json({ message: 'College Inventory API Running' }));
 app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
