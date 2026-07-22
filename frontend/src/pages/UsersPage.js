@@ -125,16 +125,16 @@ export default function UsersPage() {
                       </span>
                     </td>
                     <td>
-                      <span className={`badge ${u.isActive ? 'badge-success' : 'badge-danger'}`}>
-                        {u.isActive ? 'Active' : 'Inactive'}
+                      <span className={`badge ${u.isActive ? 'badge-success' : 'badge-warning'}`} style={!u.isActive ? { background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' } : {}}>
+                        {u.isActive ? 'Active' : 'Pending Approval'}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--text2)' }}>{new Date(u.createdAt).toLocaleDateString('en-IN')}</td>
+                    <td style={{ color: 'var(--text2)' }}>{u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN') : 'Just now'}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn btn-secondary btn-sm" onClick={() => openEdit(u)}>✏️ Edit</button>
                         <button className="btn btn-secondary btn-sm" onClick={() => handleToggle(u)} style={{ color: u.isActive ? 'var(--warning)' : 'var(--success)' }}>
-                          {u.isActive ? '🚫 Disable' : '✅ Enable'}
+                          {u.isActive ? '🚫 Deactivate' : '✅ Approve'}
                         </button>
                         <button className="btn btn-danger btn-sm" onClick={() => handleDelete(u._id)}>🗑️</button>
                       </div>

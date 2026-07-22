@@ -4,6 +4,7 @@ import { CATEGORIES, UOM_OPTIONS } from '../api/constants';
 import { useAuth } from '../context/AuthContext';
 import ExcelImportModal from '../components/ExcelImportModal';
 import { useDebounce } from '../hooks/useDebounce';
+import { exportToCSV } from '../utils/csvExporter';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { COLLEGE_NAME } from '../config/logo';
@@ -101,6 +102,15 @@ export default function InventoryPage() {
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
   useEffect(() => { fetchSuggestions(); }, [fetchSuggestions]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'add') {
+      // Small timeout to allow items/component loading to settle
+      setTimeout(() => openAdd(), 200);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [items]);
 
   const openAdd = () => { setEditItem(null); setForm(emptyForm); setError(''); setShowAddModal(true); };
   const openEdit = (item) => {
@@ -374,6 +384,24 @@ export default function InventoryPage() {
     doc.save('inventory_report.pdf');
   };
 
+  const exportCSV = () => {
+    const headersMap = {
+      itemName: 'Item Name',
+      category: 'Category',
+      quantityPurchased: 'Total Purchased',
+      quantityRemaining: 'Current Stock',
+      unitPrice: 'Unit Price',
+      totalCost: 'Total Value',
+      company: 'Vendor/Company',
+      dateOfPurchase: 'Purchase Date'
+    };
+    const formattedData = items.map(item => ({
+      ...item,
+      dateOfPurchase: item.dateOfPurchase ? new Date(item.dateOfPurchase).toLocaleDateString('en-IN') : '—'
+    }));
+    exportToCSV(formattedData, 'inventory_export.csv', headersMap);
+  };
+
   return (
     <div className="page">
       {/* Header */}
@@ -385,6 +413,7 @@ export default function InventoryPage() {
         {can('add') && (
           <div style={{ display: 'flex', gap: 10 }}>
             <button className="btn btn-secondary" onClick={exportPDF}>📄 Export PDF</button>
+            <button className="btn btn-secondary" onClick={exportCSV}>📊 Export CSV</button>
             <button className="btn btn-secondary" onClick={() => setShowImportModal(true)}>📥 Import Excel</button>
             <button className="btn btn-primary" onClick={openAdd}>+ Add Item</button>
           </div>

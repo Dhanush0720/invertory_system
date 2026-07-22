@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { auditAPI } from '../api';
 import { useDebounce } from '../hooks/useDebounce';
+import { exportToCSV } from '../utils/csvExporter';
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState([]);
@@ -41,6 +42,21 @@ export default function AuditLogsPage() {
     setPage(1);
   }, [debouncedSearch, actionFilter]);
 
+  const exportCSV = () => {
+    const headersMap = {
+      'item.itemName': 'Target Item',
+      actionType: 'Action Type',
+      'performedBy.name': 'Performed By',
+      notes: 'Action Notes',
+      createdAt: 'Timestamp'
+    };
+    const formattedData = logs.map(l => ({
+      ...l,
+      createdAt: l.createdAt ? new Date(l.createdAt).toLocaleString('en-IN') : '—'
+    }));
+    exportToCSV(formattedData, 'audit_logs_export.csv', headersMap);
+  };
+
   const getActionBadge = (action) => {
     const map = {
       'CREATED': { bg: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' },
@@ -66,11 +82,12 @@ export default function AuditLogsPage() {
 
   return (
     <div className="page">
-      <div className="page-header">
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 className="page-title">🛡️ Audit Logs</h1>
           <p className="page-subtitle">Track all inventory actions across the system.</p>
         </div>
+        <button className="btn btn-secondary" onClick={exportCSV}>📊 Export CSV</button>
       </div>
 
       {/* Search & Filter */}

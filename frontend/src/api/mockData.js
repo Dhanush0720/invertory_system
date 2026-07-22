@@ -14,6 +14,14 @@ const MOCK_MESS_MENU_KEY = 'demo_mess_menu';
 const MOCK_MESS_PURCHASES_KEY = 'demo_mess_purchases';
 const MOCK_MESS_SERVED_LOGS_KEY = 'demo_mess_served_logs';
 const MOCK_MESS_GROCERIES_SUPPLIES_KEY = 'demo_groceries_supplies';
+const MOCK_USERS_KEY = 'demo_users';
+
+const INITIAL_USERS = [
+  { _id: 'u-1', name: 'Dr. Dhanush K (Admin)', email: 'admin@mail.com', role: 'admin', lastActive: 'Active now', isActive: true },
+  { _id: 'u-2', name: 'Mrs. Lalitha S. (Staff)', email: 'lalitha@mail.com', role: 'staff', lastActive: '2 hours ago', isActive: true },
+  { _id: 'u-3', name: 'Guest Explorer (Demo)', email: 'guest@demo.com', role: 'admin', lastActive: 'Active now', isActive: true },
+  { _id: 'u-4', name: 'Raju Mess Manager (Mess)', email: 'raju@mail.com', role: 'mess', lastActive: '1 day ago', isActive: true }
+];
 
 function normalizeUOM(uom) {
   if (!uom) return 'Kg';
@@ -236,6 +244,7 @@ export const initDemoDb = (force = false) => {
     localStorage.setItem(MOCK_MESS_PURCHASES_KEY, JSON.stringify([]));
     localStorage.setItem(MOCK_MESS_SERVED_LOGS_KEY, JSON.stringify([]));
     localStorage.setItem(MOCK_MESS_GROCERIES_SUPPLIES_KEY, JSON.stringify(INITIAL_GROCERIES_SUPPLIES));
+    localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(INITIAL_USERS));
   }
 };
 
@@ -272,14 +281,62 @@ const simulateLatency = (data) => {
 export const mockAuthAPI = {
   login: (data) => {
     localStorage.setItem('isDemo', 'true');
-    const role = data.email === 'raju@mail.com' ? 'mess' : 'admin';
-    const name = data.email === 'raju@mail.com' ? 'Raju Mess Manager' : 'Guest Explorer';
-    const user = { id: 'demo-user-id', name, email: data.email || 'guest@demo.com', role };
-    localStorage.setItem('user', JSON.stringify(user));
+    const list = getCollection(MOCK_USERS_KEY);
+    const email = data.email ? data.email.toLowerCase() : '';
+    const user = list.find(u => u.email.toLowerCase() === email);
+
+    if (user) {
+      if (!user.isActive) {
+        return Promise.reject({
+          response: {
+            status: 403,
+            data: { message: 'Your account is pending administrator approval. Please contact the administrator.' }
+          }
+        });
+      }
+      localStorage.setItem('user', JSON.stringify({ id: user._id, name: user.name, email: user.email, role: user.role }));
+      localStorage.setItem('token', 'mock-demo-token');
+      addAuditLog('LOGIN', `${user.name} logged into demo session`);
+      return simulateLatency({ token: 'mock-demo-token', user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    }
+
+    const role = email === 'raju@mail.com' ? 'mess' : 'admin';
+    const name = email === 'raju@mail.com' ? 'Raju Mess Manager' : 'Guest Explorer';
+    const fallbackUser = { id: 'demo-user-id', name, email: email || 'guest@demo.com', role };
+    localStorage.setItem('user', JSON.stringify(fallbackUser));
     localStorage.setItem('token', 'mock-demo-token');
-    initDemoDb(true); // reset on login to ensure clean initial experience
     addAuditLog('LOGIN', `${name} logged into demo session`);
-    return simulateLatency({ token: 'mock-demo-token', user });
+    return simulateLatency({ token: 'mock-demo-token', user: fallbackUser });
+  },
+  register: (data) => {
+    const list = getCollection(MOCK_USERS_KEY);
+    const email = data.email ? data.email.toLowerCase() : '';
+    
+    if (list.some(u => u.email.toLowerCase() === email)) {
+      return Promise.reject({
+        response: {
+          data: { message: 'Email address already registered' }
+        }
+      });
+    }
+
+    const newUser = {
+      _id: `u-${Date.now()}`,
+      name: data.name,
+      email,
+      role: 'viewer',
+      isActive: false, // Pending approval
+      lastActive: 'Never'
+    };
+
+    list.unshift(newUser);
+    setCollection(MOCK_USERS_KEY, list);
+    addAuditLog('REGISTER', `${data.name} signed up (pending approval)`);
+
+    return simulateLatency({
+      message: 'Registration successful! Your account is pending administrator approval.',
+      user: newUser
+    });
   },
   me: () => {
     const user = JSON.parse(localStorage.getItem('user')) || { id: 'demo-user-id', name: 'Guest Explorer', email: 'guest@demo.com', role: 'admin' };
@@ -501,16 +558,31 @@ export const mockDistributionsAPI = {
 
 export const mockUsersAPI = {
   getAll: () => {
-    return simulateLatency([
-      { _id: 'u-1', name: 'Dr. Dhanush K (Admin)', email: 'admin@mail.com', role: 'admin', lastActive: 'Active now' },
-      { _id: 'u-2', name: 'Mrs. Lalitha S. (Staff)', email: 'lalitha@mail.com', role: 'staff', lastActive: '2 hours ago' },
-      { _id: 'u-3', name: 'Guest Explorer (Demo)', email: 'guest@demo.com', role: 'admin', lastActive: 'Active now' },
-      { _id: 'u-4', name: 'Raju Mess Manager (Mess)', email: 'raju@mail.com', role: 'mess', lastActive: '1 day ago' }
-    ]);
+    return simulateLatency(getCollection(MOCK_USERS_KEY));
   },
-  create: (data) => simulateLatency({ _id: `u-${Date.now()}`, ...data }),
-  update: (id, data) => simulateLatency({ _id: id, ...data }),
-  delete: (id) => simulateLatency({ message: 'User deleted' })
+  create: (data) => {
+    const list = getCollection(MOCK_USERS_KEY);
+    const newUser = { _id: `u-${Date.now()}`, isActive: true, ...data };
+    list.unshift(newUser);
+    setCollection(MOCK_USERS_KEY, list);
+    return simulateLatency(newUser);
+  },
+  update: (id, data) => {
+    const list = getCollection(MOCK_USERS_KEY);
+    const idx = list.findIndex(u => u._id === id);
+    if (idx !== -1) {
+      list[idx] = { ...list[idx], ...data };
+      setCollection(MOCK_USERS_KEY, list);
+      return simulateLatency(list[idx]);
+    }
+    return Promise.reject({ response: { data: { message: 'User not found' } } });
+  },
+  delete: (id) => {
+    let list = getCollection(MOCK_USERS_KEY);
+    list = list.filter(u => u._id !== id);
+    setCollection(MOCK_USERS_KEY, list);
+    return simulateLatency({ message: 'User deleted' });
+  }
 };
 
 export const mockDashboardAPI = {

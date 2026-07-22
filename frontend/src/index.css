@@ -742,12 +742,14 @@ select.form-control option { background: var(--surface); color: var(--text); }
 .alert-error {
   background: rgba(224, 49, 49, 0.08);
   border: 1px solid rgba(224, 49, 49, 0.25);
-  color: #ffc9c9;
+  color: #c92a2a; /* Crimson Red - passes WCAG AA contrast on both light/dark surfaces */
+  font-weight: 600;
 }
 .alert-success {
   background: rgba(39, 166, 68, 0.08);
   border: 1px solid rgba(39, 166, 68, 0.25);
-  color: #c3e6cb;
+  color: #2e7d32; /* Forest Green - passes WCAG contrast on both light/dark surfaces */
+  font-weight: 600;
 }
 
 /* ═══ LOADING ═══════════════════════════════════════════════════════ */

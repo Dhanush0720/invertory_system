@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { distributionsAPI } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useDebounce } from '../hooks/useDebounce';
+import { exportToCSV } from '../utils/csvExporter';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -122,6 +123,25 @@ export default function DistributionsPage() {
     doc.save('distributions_report.pdf');
   };
 
+  const exportCSV = () => {
+    const headersMap = {
+      'item.itemName': 'Item Name',
+      'item.segment': 'Category',
+      quantityDistributed: 'Quantity Distributed',
+      uom: 'Unit of Measure',
+      distributedToDepartment: 'Distributed To Department',
+      authorisedBy: 'Authorized By',
+      dateOfDistribution: 'Date of Distribution',
+      'distributedBy.name': 'Distributed By Staff',
+      remarks: 'Remarks'
+    };
+    const formattedData = distributions.map(d => ({
+      ...d,
+      dateOfDistribution: d.dateOfDistribution ? new Date(d.dateOfDistribution).toLocaleDateString('en-IN') : '—'
+    }));
+    exportToCSV(formattedData, 'distributions_export.csv', headersMap);
+  };
+
   return (
     <div className="page">
       <div className="page-header">
@@ -129,7 +149,10 @@ export default function DistributionsPage() {
           <h1 className="page-title">🚚 Distributions</h1>
           <p className="page-subtitle">Complete history of all distributed items</p>
         </div>
-        <button className="btn btn-secondary" onClick={exportPDF}>📄 Export PDF</button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn btn-secondary" onClick={exportPDF}>📄 Export PDF</button>
+          <button className="btn btn-secondary" onClick={exportCSV}>📊 Export CSV</button>
+        </div>
       </div>
 
       {/* Quick stats */}

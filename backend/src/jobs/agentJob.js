@@ -82,32 +82,19 @@ async function runAutonomousAgent() {
 
             // ── WHATSAPP AUTONOMOUS NOTIFICATION ──
             const highAlerts = alertsToSave.filter(a => a.severity === 'High');
-            const phone  = process.env.WHATSAPP_NUMBER;
-
-            if (highAlerts.length > 0 && phone) {
-                console.log(`📱 Sending WhatsApp alert to ${phone}...`);
+            if (highAlerts.length > 0) {
                 const msgLines = [
-                    `*🚨 Nirvahana Low-Stock Alert*`,
+                    `*🚨 Nirvahana Daily Alert Summary*`,
                     ``,
                     ...highAlerts.slice(0, 3).map((a, i) => `${i + 1}. ${a.message}`),
                     ``,
                     `*Action:* ${highAlerts[0].recommended_action}`
                 ];
                 const msg = msgLines.join('\n');
-                const scriptPath = path.join(__dirname, '../utils/whatsapp_sender.py');
-                const child = spawn('python', [scriptPath, phone, msg], { shell: false });
-                let stdout = '';
-                let stderr = '';
-
-                child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
-                child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
-                child.on('close', (code) => {
-                    if (code !== 0) console.error(`❌ WhatsApp failed with exit code ${code}`);
-                    else console.log(`✅ WhatsApp sent: ${stdout.trim()}`);
-                    if (stderr) console.warn(`⚠️ Python stderr: ${stderr.trim()}`);
+                const { triggerWhatsAppNotification } = require('../utils/whatsappHelper');
+                triggerWhatsAppNotification(null, null, null, msg).catch(e => {
+                    console.error('Failed to trigger daily WhatsApp alert:', e);
                 });
-            } else if (highAlerts.length > 0) {
-                console.log("⚠️ High alerts found but WHATSAPP_NUMBER is missing in .env. Skipping.");
             }
 
         } else {

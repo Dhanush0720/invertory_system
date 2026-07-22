@@ -41,6 +41,7 @@ const isDemo = () => localStorage.getItem('isDemo') === 'true';
 
 export const authAPI = {
   login: (data) => isDemo() ? mockAuthAPI.login(data) : API.post('/auth/login', data),
+  register: (data) => isDemo() ? mockAuthAPI.register(data) : API.post('/auth/register', data),
   me: () => isDemo() ? mockAuthAPI.me() : API.get('/auth/me'),
 };
 

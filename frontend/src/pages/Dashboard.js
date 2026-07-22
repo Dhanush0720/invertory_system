@@ -227,6 +227,41 @@ export default function Dashboard() {
       <SmartAlerts />
       <AskNirvahana />
 
+      {/* ── QUICK ACTIONS HUB ── */}
+      <div className="card" style={{ marginBottom: 24, padding: '20px 24px' }}>
+        <h3 className="heading" style={{ fontSize: 16, marginBottom: 14, fontFamily: 'Syne, sans-serif' }}>⚡ Quick Action Hub</h3>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <button 
+            className="btn btn-primary" 
+            onClick={() => window.location.href = '/inventory?action=add'}
+            style={{ padding: '10px 18px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+          >
+            ➕ Add New Item
+          </button>
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => window.location.href = '/inventory'}
+            style={{ padding: '10px 18px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', background: 'rgba(94, 106, 210, 0.12)', borderColor: 'var(--accent)', color: 'var(--accent-hover)' }}
+          >
+            🚚 Distribute Material
+          </button>
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => window.location.href = '/users'}
+            style={{ padding: '10px 18px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+          >
+            👥 Manage Users
+          </button>
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => window.location.href = '/distributions'}
+            style={{ padding: '10px 18px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+          >
+            📊 View Reports
+          </button>
+        </div>
+      </div>
+
       {/* ── STAT CARDS ── */}
       <div className="grid-4" style={{ marginBottom: 24 }}>
         <StatCard icon="📦" label="Total Items" value={stats.totalItems.toLocaleString()} color="#3b82f6" />

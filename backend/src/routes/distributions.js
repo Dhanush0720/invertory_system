@@ -89,6 +89,16 @@ router.post('/', protect, authorize('admin', 'staff'), async (req, res) => {
       notes: `Distributed ${requestedQty} units to ${payload.distributedToDepartment}`
     });
 
+    // Calculate updated remaining stock to trigger real-time WhatsApp low stock alerts
+    const newRemaining = remaining - requestedQty;
+    const threshold = item.lowStockThreshold !== undefined ? item.lowStockThreshold : 5;
+    if (newRemaining <= threshold) {
+      const { triggerWhatsAppNotification } = require('../utils/whatsappHelper');
+      triggerWhatsAppNotification(item.itemName, newRemaining, threshold).catch(e => {
+        console.error('Failed to trigger WhatsApp alert:', e);
+      });
+    }
+
     const populated = await distribution.populate('item', 'itemName category');
     res.status(201).json(populated);
   } catch (err) {
