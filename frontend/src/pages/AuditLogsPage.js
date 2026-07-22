@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { auditAPI } from '../api';
+import { useDebounce } from '../hooks/useDebounce';
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState([]);
@@ -7,26 +8,38 @@ export default function AuditLogsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [search, setSearch] = useState('');
+  const [actionFilter, setActionFilter] = useState('');
 
-  const fetchLogs = async (pageNum) => {
+  const debouncedSearch = useDebounce(search, 400);
+
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
-      const { data } = await auditAPI.getAll({ page: pageNum, limit: 50 });
+      const { data } = await auditAPI.getAll({ 
+        page, 
+        limit: 50, 
+        search: debouncedSearch, 
+        actionType: actionFilter 
+      });
       setLogs(data.logs);
       setPage(data.page);
       setTotalPages(data.pages);
       setTotalRecords(data.total);
     } catch (err) {
       console.error(err);
-      alert('Failed to load audit logs.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, debouncedSearch, actionFilter]);
 
   useEffect(() => {
-    fetchLogs(page);
-  }, [page]);
+    fetchLogs();
+  }, [fetchLogs]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, actionFilter]);
 
   const getActionBadge = (action) => {
     const map = {
@@ -57,6 +70,32 @@ export default function AuditLogsPage() {
         <div>
           <h1 className="page-title">🛡️ Audit Logs</h1>
           <p className="page-subtitle">Track all inventory actions across the system.</p>
+        </div>
+      </div>
+
+      {/* Search & Filter */}
+      <div className="card" style={{ padding: '14px 18px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input 
+            className="form-control" 
+            placeholder="🔍  Search logs by notes, item, or user name…" 
+            style={{ flex: 1, minWidth: 200 }}
+            value={search} 
+            onChange={e => setSearch(e.target.value)} 
+          />
+          <select 
+            className="form-control" 
+            style={{ width: 190 }} 
+            value={actionFilter} 
+            onChange={e => setActionFilter(e.target.value)}
+          >
+            <option value="">All Actions</option>
+            <option value="CREATED">CREATED</option>
+            <option value="UPDATED">UPDATED</option>
+            <option value="DELETED">DELETED</option>
+            <option value="DISTRIBUTED">DISTRIBUTED</option>
+            <option value="RETURNED">RETURNED</option>
+          </select>
         </div>
       </div>
 

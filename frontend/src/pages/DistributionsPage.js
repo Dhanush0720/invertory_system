@@ -1,24 +1,36 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { distributionsAPI } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useDebounce } from '../hooks/useDebounce';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { COLLEGE_NAME } from '../config/logo';
+
+const PALETTE = ['#f97316','#3b82f6','#22c55e','#a855f7','#ec4899','#f59e0b','#06b6d4','#84cc16','#ef4444','#10b981'];
 
 export default function DistributionsPage() {
   const { user } = useAuth();
   const [distributions, setDistributions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const debouncedSearch = useDebounce(search, 400);
 
   const fetchDists = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await distributionsAPI.getAll({ department: search });
+      const res = await distributionsAPI.getAll({ 
+        search: debouncedSearch,
+        startDate,
+        endDate
+      });
       setDistributions(res.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }, [search]);
+  }, [debouncedSearch, startDate, endDate]);
 
   useEffect(() => { fetchDists(); }, [fetchDists]);
 
@@ -51,18 +63,35 @@ export default function DistributionsPage() {
   const totalDistributed = distributions.reduce((s, d) => s + d.quantityDistributed, 0);
   const departments = [...new Set(distributions.map(d => d.distributedToDepartment))];
 
+  const deptData = useMemo(() => {
+    const summary = {};
+    distributions.forEach(d => {
+      const dept = d.distributedToDepartment || 'Other';
+      summary[dept] = (summary[dept] || 0) + (d.quantityDistributed || 0);
+    });
+    return Object.entries(summary)
+      .map(([name, qty]) => ({ name, quantity: qty }))
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 10);
+  }, [distributions]);
+
   const exportPDF = () => {
     const doc = new jsPDF('landscape');
-    
-    // Placeholder space for Logo if MD wants to add it later
-    // doc.addImage(logoBase64, 'PNG', 14, 10, 20, 20); 
     
     doc.setFontSize(18);
     doc.text(`${COLLEGE_NAME} - Distributions Report`, 14, 22);
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, 14, 30);
-    doc.text(`Total Records: ${distributions.length}`, 14, 36);
+    doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, 14, 28);
+
+    let filterText = `Total Records: ${distributions.length}`;
+    if (startDate || endDate) {
+      filterText += ` | Date Range: ${startDate || 'Any'} to ${endDate || 'Any'}`;
+    }
+    if (search) {
+      filterText += ` | Search Term: "${search}"`;
+    }
+    doc.text(filterText, 14, 34);
 
     const tableColumn = ["Item Name", "Category", "Qty", "UOM", "Distributed To", "Authorised By", "Date", "Remarks"];
     const tableRows = [];
@@ -83,7 +112,7 @@ export default function DistributionsPage() {
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 44,
+      startY: 40,
       theme: 'striped',
       styles: { fontSize: 8, cellPadding: 3 },
       headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
@@ -128,17 +157,73 @@ export default function DistributionsPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="search-bar">
-        <div className="search-input-wrap">
-          <span className="search-icon">🔍</span>
-          <input
-            placeholder="Filter by department..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+      {/* Search & Filter */}
+      <div className="card" style={{ padding: '14px 18px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ flex: 1, minWidth: 200, display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 600 }}>🔍</span>
+            <input 
+              className="form-control" 
+              placeholder="Search by item name, department, or receiver…" 
+              value={search} 
+              onChange={e => setSearch(e.target.value)} 
+              style={{ flex: 1 }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <label style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 600 }}>From:</label>
+            <input 
+              type="date" 
+              className="form-control" 
+              style={{ width: 140 }}
+              value={startDate} 
+              onChange={e => setStartDate(e.target.value)} 
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <label style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 600 }}>To:</label>
+            <input 
+              type="date" 
+              className="form-control" 
+              style={{ width: 140 }}
+              value={endDate} 
+              onChange={e => setEndDate(e.target.value)} 
+            />
+          </div>
+          {(startDate || endDate || search) && (
+            <button 
+              className="btn btn-secondary btn-sm" 
+              onClick={() => { setSearch(''); setStartDate(''); setEndDate(''); }}
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Analytics Chart */}
+      {!loading && distributions.length > 0 && (
+        <div className="card" style={{ marginBottom: 24, padding: '20px 24px' }}>
+          <h3 className="heading" style={{ fontSize: 16, marginBottom: 16 }}>📊 Department Distribution Quantities</h3>
+          <div style={{ width: '100%', height: 260 }}>
+            <ResponsiveContainer>
+              <BarChart data={deptData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="name" stroke="var(--text3)" fontSize={11} tickLine={false} />
+                <YAxis stroke="var(--text3)" fontSize={11} tickLine={false} />
+                <Tooltip 
+                  contentStyle={{ background: 'var(--surface)', borderColor: 'var(--border)', borderRadius: 'var(--radius)', color: 'var(--text)' }}
+                  labelStyle={{ fontWeight: 'bold' }}
+                />
+                <Bar dataKey="quantity" fill="var(--accent)" radius={[4, 4, 0, 0]}>
+                  {deptData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={PALETTE[index % PALETTE.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Table */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>

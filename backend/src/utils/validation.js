@@ -96,6 +96,7 @@ function sanitizeItemPayload(body = {}) {
     assetType: body.assetType || undefined,
     location: body.location || undefined,
     qrCodeId: sanitizeText(body.qrCodeId, { max: 120 }) || undefined,
+    lowStockThreshold: body.lowStockThreshold !== undefined && body.lowStockThreshold !== '' ? parseInt(body.lowStockThreshold) : undefined,
     dateOfPurchase,
     warrantyExpiryDate,
     nextMaintenanceDate

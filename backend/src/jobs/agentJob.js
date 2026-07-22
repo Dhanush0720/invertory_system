@@ -1,6 +1,5 @@
 const cron = require('node-cron');
 const Alert = require('../models/Alert');
-// Assuming your inventory model is called Item. Adjust the path/name if needed!
 const Item = require('../models/Item'); 
 const { generateInventoryInsights } = require('../utils/agentService');
 const { spawn } = require('child_process');
@@ -30,10 +29,17 @@ async function runAutonomousAgent() {
                 }
             },
             {
-                $match: { quantityRemaining: { $lte: 5, $gt: -9999 } }  // items where remaining ≤ 5
+                $match: {
+                    $expr: {
+                        $and: [
+                            { $gt: ['$quantityRemaining', -9999] },
+                            { $lte: ['$quantityRemaining', { $ifNull: ['$lowStockThreshold', 5] }] }
+                        ]
+                    }
+                }
             },
             {
-                $project: { dists: 0 }  // strip distribution array from payload
+                $project: { dists: 0 }
             }
         ];
 

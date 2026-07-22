@@ -11,14 +11,38 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
     const limit = Math.min(200, parseInt(req.query.limit) || 50);
     const skip = (page - 1) * limit;
 
+    const { actionType, search } = req.query;
+    let query = {};
+
+    if (actionType) {
+      query.actionType = actionType;
+    }
+
+    if (search) {
+      const Item = require('../models/Item');
+      const User = require('../models/User');
+
+      const matchingItems = await Item.find({ itemName: { $regex: search, $options: 'i' } }).select('_id');
+      const itemIds = matchingItems.map(i => i._id);
+
+      const matchingUsers = await User.find({ name: { $regex: search, $options: 'i' } }).select('_id');
+      const userIds = matchingUsers.map(u => u._id);
+
+      query.$or = [
+        { notes: { $regex: search, $options: 'i' } },
+        { item: { $in: itemIds } },
+        { performedBy: { $in: userIds } }
+      ];
+    }
+
     const [logs, total] = await Promise.all([
-      AuditLog.find()
+      AuditLog.find(query)
         .populate('performedBy', 'name email role')
         .populate('item', 'itemName segment company')
         .sort('-createdAt')
         .skip(skip)
         .limit(limit),
-      AuditLog.countDocuments()
+      AuditLog.countDocuments(query)
     ]);
 
     res.json({

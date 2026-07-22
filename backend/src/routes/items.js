@@ -54,7 +54,7 @@ router.get('/', protect, async (req, res) => {
         ...item.toObject(),
         quantityDistributed: distributed,
         quantityRemaining: remaining,
-        isLowStock: remaining <= 5 && remaining > 0,
+        isLowStock: remaining <= (item.lowStockThreshold || 5) && remaining > 0,
         isOutOfStock: remaining <= 0
       };
     });
@@ -221,6 +221,13 @@ router.post('/bulk-import', protect, authorize('admin', 'staff'), async (req, re
           const r = rawRow.dateOfDistribution;
           if (typeof r === 'number') distDate = new Date((r - 25569) * 86400000);
           else { const p = new Date(r); if (!isNaN(p)) distDate = p; }
+        }
+        if (distDate && dateOfPurchase) {
+          const pStr = new Date(dateOfPurchase).toISOString().split('T')[0];
+          const dStr = new Date(distDate).toISOString().split('T')[0];
+          if (dStr < pStr) {
+            distDate = dateOfPurchase;
+          }
         }
         toInsertDist.push({
           item: created._id,

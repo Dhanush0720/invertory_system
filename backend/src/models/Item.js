@@ -13,6 +13,7 @@ const itemSchema = new mongoose.Schema({
   totalCost:        { type: Number, default: 0 },
   shopName:         { type: String, trim: true },
   particulars:      { type: String, trim: true },
+  lowStockThreshold:{ type: Number, default: 5 },
 
   // === ESTATE MANAGER EXTENSIONS ===
   assetType:           { type: String, enum: ['Fixed Asset', 'Consumable'], default: 'Consumable' },

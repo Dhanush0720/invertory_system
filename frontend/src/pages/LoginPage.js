@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { COLLEGE_NAME, COLLEGE_SUB } from '../config/logo';
+import { COLLEGE_NAME, COLLEGE_SUB, LOGO_PATH } from '../config/logo';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -34,7 +34,8 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="login-bg" />
       <div className="login-card">
-        <div className="login-logo">
+        <div className="login-logo" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <img src={LOGO_PATH} alt="Logo" style={{ height: 60, width: 60, borderRadius: '12px', objectFit: 'contain', marginBottom: 16 }} />
           <h1>{COLLEGE_NAME}</h1>
           <p>{COLLEGE_SUB}</p>
         </div>

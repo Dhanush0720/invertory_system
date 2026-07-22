@@ -418,14 +418,27 @@ export const mockItemsAPI = {
 export const mockDistributionsAPI = {
   getAll: (params = {}) => {
     let list = getCollection(MOCK_DISTS_KEY);
+    const { search, startDate, endDate } = params;
 
-    if (params.search) {
-      const q = params.search.toLowerCase();
+    if (search) {
+      const q = search.toLowerCase();
       list = list.filter(d => 
         (d.item?.itemName || '').toLowerCase().includes(q) ||
         (d.distributedToDepartment || '').toLowerCase().includes(q) ||
         (d.distributedTo || '').toLowerCase().includes(q)
       );
+    }
+
+    if (startDate) {
+      const start = new Date(startDate).getTime();
+      list = list.filter(d => new Date(d.dateOfDistribution).getTime() >= start);
+    }
+
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      const endTimestamp = end.getTime();
+      list = list.filter(d => new Date(d.dateOfDistribution).getTime() <= endTimestamp);
     }
 
     return simulateLatency(list);
@@ -527,7 +540,7 @@ export const mockDashboardAPI = {
       totalDistributedCount += distSum;
 
       if (remaining <= 0) outOfStockItems++;
-      else if (remaining <= 5) lowStockItems++;
+      else if (remaining <= (item.lowStockThreshold || 5)) lowStockItems++;
 
       const seg = item.segment || 'OTHER';
       if (!categorySummary[seg]) {
@@ -625,11 +638,30 @@ export const mockDashboardAPI = {
 
 export const mockAuditAPI = {
   getAll: (params = {}) => {
-    const list = getCollection(MOCK_AUDIT_KEY);
+    let list = getCollection(MOCK_AUDIT_KEY);
+    const { actionType, search } = params;
+
+    if (actionType) {
+      list = list.filter(log => log.actionType === actionType);
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(log => 
+        (log.notes && log.notes.toLowerCase().includes(q)) ||
+        (log.item?.itemName && log.item.itemName.toLowerCase().includes(q)) ||
+        (log.performedBy?.name && log.performedBy.name.toLowerCase().includes(q))
+      );
+    }
+
+    const page = Math.max(1, parseInt(params.page) || 1);
+    const limit = Math.min(200, parseInt(params.limit) || 50);
+    const startIndex = (page - 1) * limit;
+    const paginatedList = list.slice(startIndex, startIndex + limit);
+
     return simulateLatency({
-      logs: list,
-      page: 1,
-      pages: 1,
+      logs: paginatedList,
+      page,
+      pages: Math.ceil(list.length / limit),
       total: list.length
     });
   }
@@ -701,7 +733,7 @@ export const mockAlertsAPI = {
         const itemDists = dists.filter(d => d.item?._id === i._id || d.item === i._id);
         const distSum = itemDists.reduce((acc, curr) => acc + (curr.quantityDistributed || 0), 0);
         const remaining = i.quantityPurchased - distSum;
-        return remaining <= 5;
+        return remaining <= (i.lowStockThreshold || 5);
       });
 
       if (lowItems.length > 0) {

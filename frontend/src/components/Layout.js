@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { COLLEGE_NAME, COLLEGE_SUB } from '../config/logo';
+import { COLLEGE_NAME, COLLEGE_SUB, LOGO_PATH } from '../config/logo';
 import { useState, useEffect } from 'react';
 
 const navItems = [
@@ -70,8 +70,33 @@ export default function Layout() {
       <aside className={`sidebar ${mobileMenuOpen ? 'sidebar-open' : ''}`}>
 
         {/* Logo Block */}
-        <div className="sidebar-logo">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-end', width: '100%' }}>
+        <div className="sidebar-logo" style={{ display: 'flex', flexDirection: 'column', alignItems: sidebarCollapsed ? 'center' : 'flex-start' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 12 }}>
+            <img src={LOGO_PATH} alt="Logo" style={{ height: 36, width: 36, borderRadius: '8px', objectFit: 'contain' }} />
+            {!sidebarCollapsed && (
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text3)',
+                  cursor: 'pointer',
+                  fontSize: 15,
+                  padding: '6px',
+                  borderRadius: 'var(--radius-sm)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all var(--transition)'
+                }}
+                className="collapse-toggle-btn"
+                title="Collapse Sidebar"
+              >
+                ⇠
+              </button>
+            )}
+          </div>
+          {sidebarCollapsed ? (
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               style={{
@@ -85,20 +110,23 @@ export default function Layout() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'all var(--transition)'
+                transition: 'all var(--transition)',
+                marginTop: 8
               }}
-              className="collapse-toggle-btn"
-              title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+              title="Expand Sidebar"
             >
-              {sidebarCollapsed ? '➔' : '⇠'}
+              ➔
             </button>
-          </div>
-          <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', lineHeight: 1.4, letterSpacing: '-0.2px' }}>
-            {COLLEGE_NAME}
-          </h2>
-          <p className="sidebar-subtitle" style={{ fontSize: 10, color: 'var(--text3)', marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 500 }}>
-            {COLLEGE_SUB}
-          </p>
+          ) : (
+            <>
+              <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', lineHeight: 1.4, letterSpacing: '-0.2px' }}>
+                {COLLEGE_NAME}
+              </h2>
+              <p className="sidebar-subtitle" style={{ fontSize: 10, color: 'var(--text3)', marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 500 }}>
+                {COLLEGE_SUB}
+              </p>
+            </>
+          )}
           {/* Status dot */}
           <div className="system-status" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 6px var(--success)', flexShrink: 0 }} />

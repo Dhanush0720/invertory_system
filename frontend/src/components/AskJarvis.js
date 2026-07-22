@@ -17,6 +17,14 @@ const AskNirvahana = () => {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 480);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     if (isOpen && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -59,8 +67,8 @@ const AskNirvahana = () => {
         onClick={() => setIsOpen(!isOpen)}
         style={{
           position: 'fixed',
-          bottom: '28px',
-          right: '28px',
+          bottom: isMobile ? '20px' : '28px',
+          right: isMobile ? '20px' : '28px',
           width: '58px',
           height: '58px',
           borderRadius: '20px',
@@ -107,10 +115,10 @@ const AskNirvahana = () => {
       {isOpen && (
         <div style={{
           position: 'fixed',
-          bottom: '100px',
-          right: '28px',
-          width: '390px',
-          maxHeight: '560px',
+          bottom: isMobile ? '90px' : '100px',
+          right: isMobile ? '16px' : '28px',
+          width: isMobile ? 'calc(100vw - 32px)' : '390px',
+          maxHeight: isMobile ? 'calc(100vh - 120px)' : '560px',
           background: 'var(--chat-bg)',
           borderRadius: '24px',
           border: '1px solid var(--chat-border)',

@@ -9,10 +9,27 @@ const { parsePositiveNumber, sanitizeDistributionPayload } = require('../utils/v
 // GET /api/distributions
 router.get('/', protect, async (req, res) => {
   try {
-    const { itemId, department } = req.query;
+    const { itemId, department, startDate, endDate, search } = req.query;
     let query = {};
     if (itemId) query.item = itemId;
     if (department) query.distributedToDepartment = { $regex: department, $options: 'i' };
+
+    if (startDate || endDate) {
+      query.dateOfDistribution = {};
+      if (startDate) query.dateOfDistribution.$gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.dateOfDistribution.$lte = end;
+      }
+    }
+
+    if (search) {
+      const Item = require('../models/Item');
+      const items = await Item.find({ itemName: { $regex: search, $options: 'i' } }).select('_id');
+      const itemIds = items.map(i => i._id);
+      query.item = { $in: itemIds };
+    }
 
     const distributions = await Distribution.find(query)
       .populate('item', 'itemName category uom')
@@ -33,6 +50,18 @@ router.post('/', protect, authorize('admin', 'staff'), async (req, res) => {
 
     const item = await Item.findById(payload.item);
     if (!item) return res.status(404).json({ message: 'Item not found' });
+
+    // Validate distribution date is not before purchase date
+    if (item.dateOfPurchase && payload.dateOfDistribution) {
+      const pDateStr = new Date(item.dateOfPurchase).toISOString().split('T')[0];
+      const dDateStr = new Date(payload.dateOfDistribution).toISOString().split('T')[0];
+      if (dDateStr < pDateStr) {
+        return res.status(400).json({
+          message: `Distribution date (${dDateStr}) cannot be earlier than the item's purchase date (${pDateStr}).`
+        });
+      }
+    }
+
 
     // Check available stock
     const distResult = await Distribution.aggregate([

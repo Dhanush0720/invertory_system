@@ -11,7 +11,8 @@ import { COLLEGE_NAME } from '../config/logo';
 const emptyForm = {
   segment: '', itemName: '', dateOfPurchase: '', company: '',
   billNo: '', uom: 'Nos', quantityPurchased: '', unitPrice: '',
-  totalCost: '', shopName: '', particulars: '', varianceReason: ''
+  totalCost: '', shopName: '', particulars: '', varianceReason: '',
+  lowStockThreshold: 5
 };
 
 const emptyDist = {
@@ -116,7 +117,8 @@ export default function InventoryPage() {
       totalCost: item.totalCost || '',
       shopName: item.shopName || '',
       particulars: item.particulars || '',
-      varianceReason: ''
+      varianceReason: '',
+      lowStockThreshold: item.lowStockThreshold ?? 5
     });
     setError(''); setShowAddModal(true);
   };
@@ -155,6 +157,17 @@ export default function InventoryPage() {
 
   const handleDist = async (e) => {
     e.preventDefault(); setSaving(true); setError('');
+
+    const selectedItem = items.find(i => i._id === distForm.item);
+    if (selectedItem && selectedItem.dateOfPurchase && distForm.dateOfDistribution) {
+      const pDateStr = new Date(selectedItem.dateOfPurchase).toISOString().split('T')[0];
+      if (distForm.dateOfDistribution < pDateStr) {
+        setError(`Distribution date (${distForm.dateOfDistribution}) cannot be earlier than the item's purchase date (${pDateStr}).`);
+        setSaving(false);
+        return;
+      }
+    }
+
     try {
       await distributionsAPI.create({ ...distForm, quantityDistributed: Number(distForm.quantityDistributed) });
       setShowDistModal(false); fetchItems();
@@ -453,8 +466,8 @@ export default function InventoryPage() {
                       <div style={{ marginTop: 4, display: 'flex', gap: 4 }}>
                         {(item.quantityRemaining ?? item.quantityPurchased) <= 0
                           ? <span className="badge badge-danger" style={{ fontSize: 9 }}>Out of Stock</span>
-                          : (item.quantityRemaining ?? item.quantityPurchased) <= 5
-                            ? <span className="badge badge-warning" style={{ fontSize: 9 }}>Low Stock</span>
+                          : (item.quantityRemaining ?? item.quantityPurchased) <= (item.lowStockThreshold || 5)
+                            ? <span className="badge badge-warning" style={{ fontSize: 9 }}>Low Stock ({item.lowStockThreshold || 5})</span>
                             : <span className="badge badge-success" style={{ fontSize: 9 }}>In Stock</span>
                         }
                       </div>
@@ -605,7 +618,7 @@ export default function InventoryPage() {
                   </div>
                 </div>
               )}
-              {/* Row 4: Shop + Particulars */}
+              {/* Row 4: Shop + Particulars + Low Stock Alert Threshold */}
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Purchased From (Shop Name)</label>
@@ -617,6 +630,10 @@ export default function InventoryPage() {
                   <datalist id="particulars-list">
                     {suggestions.particulars.map((p, i) => <option key={i} value={p} />)}
                   </datalist>
+                </div>
+                <div className="form-group" style={{ width: 150 }}>
+                  <label className="form-label">Low Stock Alert Threshold *</label>
+                  <input type="number" className="form-control" placeholder="5" min="0" value={form.lowStockThreshold} onChange={e => setForm({ ...form, lowStockThreshold: Number(e.target.value) })} required />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
