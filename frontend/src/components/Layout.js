@@ -23,6 +23,27 @@ export default function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(localStorage.getItem('sidebarCollapsed') === 'true');
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  const isMobile = window.innerWidth <= 768;
+  const effectiveCollapsed = sidebarCollapsed && !isMobile;
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to install prompt: ${outcome}`);
+    setDeferredPrompt(null);
+  };
 
   useEffect(() => {
     document.body.className = theme;
@@ -66,14 +87,14 @@ export default function Layout() {
   const roleColor = roleColors[user?.role] || 'var(--text3)';
 
   return (
-    <div className={`app-layout ${sidebarCollapsed ? 'collapsed' : ''}`}>
+    <div className={`app-layout ${effectiveCollapsed ? 'collapsed' : ''}`}>
       <aside className={`sidebar ${mobileMenuOpen ? 'sidebar-open' : ''}`}>
 
         {/* Logo Block */}
-        <div className="sidebar-logo" style={{ display: 'flex', flexDirection: 'column', alignItems: sidebarCollapsed ? 'center' : 'flex-start' }}>
+        <div className="sidebar-logo" style={{ display: 'flex', flexDirection: 'column', alignItems: effectiveCollapsed ? 'center' : 'flex-start' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 12 }}>
             <img src={LOGO_PATH} alt="Logo" style={{ height: 36, width: 36, borderRadius: '8px', objectFit: 'contain' }} />
-            {!sidebarCollapsed && (
+            {!effectiveCollapsed && (
               <button
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                 style={{
@@ -96,7 +117,7 @@ export default function Layout() {
               </button>
             )}
           </div>
-          {sidebarCollapsed ? (
+          {effectiveCollapsed ? (
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               style={{
@@ -113,6 +134,7 @@ export default function Layout() {
                 transition: 'all var(--transition)',
                 marginTop: 8
               }}
+              className="collapse-toggle-btn"
               title="Expand Sidebar"
             >
               ➔
@@ -149,7 +171,7 @@ export default function Layout() {
               end={item.exact}
               className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
               onClick={() => setMobileMenuOpen(false)}
-              title={sidebarCollapsed ? item.label : ""}
+              title={effectiveCollapsed ? item.label : ""}
             >
               <span style={{ fontSize: 18 }} className="icon">{item.emoji}</span>
               <div style={{ flex: 1 }} className="nav-text">
@@ -168,7 +190,7 @@ export default function Layout() {
                   to={item.to}
                   className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                   onClick={() => setMobileMenuOpen(false)}
-                  title={sidebarCollapsed ? item.label : ""}
+                  title={effectiveCollapsed ? item.label : ""}
                 >
                   <span style={{ fontSize: 18 }} className="icon">{item.emoji}</span>
                   <div style={{ flex: 1 }} className="nav-text">
@@ -188,6 +210,36 @@ export default function Layout() {
             <span style={{ fontSize: 10, color: 'var(--text3)', letterSpacing: '0.5px' }}>ESTATE MANAGER</span>
             <span style={{ fontSize: 10, background: 'var(--accent-subtle)', color: 'var(--accent)', padding: '2px 7px', borderRadius: 20, border: '1px solid var(--border)', fontWeight: 600 }}>v3.0</span>
           </div>
+
+          {/* PWA Install Button */}
+          {deferredPrompt && !effectiveCollapsed && (
+            <button
+              onClick={handleInstallClick}
+              style={{
+                width: '100%',
+                marginBottom: 12,
+                background: 'linear-gradient(135deg, var(--accent), #ea580c)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                padding: '8px 12px',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                boxShadow: '0 4px 12px rgba(94, 106, 210, 0.25)',
+                fontFamily: 'var(--font-heading)'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+              onMouseOut={(e) => e.currentTarget.style.transform = 'none'}
+            >
+              📱 Install Application
+            </button>
+          )}
 
           <div className="user-card">
             <div className="user-avatar">{initials}</div>
@@ -216,7 +268,7 @@ export default function Layout() {
                 {theme === 'dark' ? '☀️' : '🌙'}
               </button>
               <button className="logout-btn" onClick={handleLogout} title="Logout" style={{ padding: '6px' }}>
-                ⏻
+                🚪
               </button>
             </div>
           </div>

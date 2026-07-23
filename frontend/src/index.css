@@ -185,73 +185,75 @@ h1, h2, h3, h4, h5, .heading {
 }
 .page { padding: 48px 56px; max-width: 1400px; margin: 0 auto; width: 100%; }
 
-/* Collapsed Sidebar Rules */
-.app-layout.collapsed .sidebar {
-  width: 72px;
-}
-.app-layout.collapsed .main-content {
-  margin-left: 72px;
-}
-
-/* Hide elements in collapsed sidebar */
-.app-layout.collapsed .sidebar-logo h2,
-.app-layout.collapsed .sidebar-subtitle,
-.app-layout.collapsed .system-status,
-.app-layout.collapsed .nav-label,
-.app-layout.collapsed .nav-text,
-.app-layout.collapsed .version-row,
-.app-layout.collapsed .user-info {
-  display: none !important;
-}
-
-/* Adjust logo block and elements on collapse */
-.app-layout.collapsed .sidebar-logo {
-  padding: 24px 16px;
-  align-items: center;
-}
-.app-layout.collapsed .logo-placeholder {
-  margin-bottom: 0;
-}
-
-/* Adjust navigation for collapse */
-.app-layout.collapsed .nav-section {
-  padding: 16px 8px;
-}
-.app-layout.collapsed .nav-item {
-  justify-content: center;
-  padding: 12px;
-}
-.app-layout.collapsed .nav-item .icon {
-  font-size: 18px;
-  margin: 0;
-}
-
-/* Adjust user card and footer for collapse */
-.app-layout.collapsed .sidebar-footer {
-  padding: 12px 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-.app-layout.collapsed .user-card {
-  flex-direction: column;
-  background: transparent;
-  border: none;
-  padding: 0;
-  gap: 8px;
-  width: 100%;
-  align-items: center;
-}
-.app-layout.collapsed .logout-btn {
-  padding: 8px;
-  width: 32px;
-  height: 32px;
-  justify-content: center;
-}
-.app-layout.collapsed .footer-actions {
-  flex-direction: column;
-  gap: 8px;
+/* Collapsed Sidebar Rules - Desktop Only */
+@media (min-width: 769px) {
+  .app-layout.collapsed .sidebar {
+    width: 72px;
+  }
+  .app-layout.collapsed .main-content {
+    margin-left: 72px;
+  }
+  
+  /* Hide elements in collapsed sidebar */
+  .app-layout.collapsed .sidebar-logo h2,
+  .app-layout.collapsed .sidebar-subtitle,
+  .app-layout.collapsed .system-status,
+  .app-layout.collapsed .nav-label,
+  .app-layout.collapsed .nav-text,
+  .app-layout.collapsed .version-row,
+  .app-layout.collapsed .user-info {
+    display: none !important;
+  }
+  
+  /* Adjust logo block and elements on collapse */
+  .app-layout.collapsed .sidebar-logo {
+    padding: 24px 16px;
+    align-items: center;
+  }
+  .app-layout.collapsed .logo-placeholder {
+    margin-bottom: 0;
+  }
+  
+  /* Adjust navigation for collapse */
+  .app-layout.collapsed .nav-section {
+    padding: 16px 8px;
+  }
+  .app-layout.collapsed .nav-item {
+    justify-content: center;
+    padding: 12px;
+  }
+  .app-layout.collapsed .nav-item .icon {
+    font-size: 18px;
+    margin: 0;
+  }
+  
+  /* Adjust user card and footer for collapse */
+  .app-layout.collapsed .sidebar-footer {
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .app-layout.collapsed .user-card {
+    flex-direction: column;
+    background: transparent;
+    border: none;
+    padding: 0;
+    gap: 8px;
+    width: 100%;
+    align-items: center;
+  }
+  .app-layout.collapsed .logout-btn {
+    padding: 8px;
+    width: 32px;
+    height: 32px;
+    justify-content: center;
+  }
+  .app-layout.collapsed .footer-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
 }
 
 /* ═══ SIDEBAR ══════════════════════════════════════════════════════ */
@@ -834,7 +836,41 @@ select.form-control option { background: var(--surface); color: var(--text); }
 @media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); }
   .sidebar.sidebar-open { transform: translateX(0); }
-  .main-content { margin-left: 0; padding-bottom: 24px; }
+  .main-content { margin-left: 0; padding-bottom: 24px; overflow-x: hidden !important; }
+  
+  /* Hide sidebar collapse/toggle buttons on mobile completely */
+  .collapse-toggle-btn { display: none !important; }
+  
+  /* Prevent collapsed sidebar settings on desktop from leaking to mobile layout */
+  .app-layout.collapsed .sidebar { transform: translateX(-100%) !important; width: 270px !important; }
+  .app-layout.collapsed .sidebar.sidebar-open { transform: translateX(0) !important; }
+  .app-layout.collapsed .main-content { margin-left: 0 !important; }
+
+  /* Allow searchable dropdown panels to float outside cards and form elements on mobile, and set standard mobile card padding */
+  .card, form, .page { overflow: visible !important; }
+  .card, form { padding: 16px !important; box-sizing: border-box !important; }
+
+  /* Force 1-column layout and constrain width for all form grids on mobile */
+  .form-grid,
+  form div[style*="display: grid"],
+  form div[style*="display:grid"] {
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+  
+  /* Force children to span only 1 column to prevent implicit second track creation in grid */
+  .form-grid > *,
+  form div[style*="display: grid"] > *,
+  form div[style*="display:grid"] > * {
+    grid-column: span 1 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
   .page { padding: 24px 16px; }
   .topbar { display: flex; position: sticky; top: 0; z-index: 90; }
   .sidebar-overlay { display: block; }
@@ -879,10 +915,80 @@ select.form-control option { background: var(--surface); color: var(--text); }
   /* Touch target improvements */
   .btn, .form-control { min-height: 40px; }
   
-  /* Table mobile scrolling */
-  table { font-size: 12px; min-width: 600px; }
-  thead th { font-size: 10px; padding: 10px 12px; }
-  tbody td { padding: 10px 12px; }
+  /* Table mobile scrolling - prevent squishing of columns and force overflow container to scroll */
+  table { font-size: 12.5px; min-width: 880px !important; }
+  thead th { font-size: 10px; padding: 16px 18px !important; white-space: nowrap !important; }
+  tbody td { padding: 16px 18px !important; white-space: nowrap !important; }
+
+  /* Stack inputs/dropdowns inside search cards to fit mobile screens */
+  .card div[style*="display: flex"][style*="flex-wrap: wrap"],
+  .card div[style*="display: flex"][style*="gap: 10"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .card div[style*="display: flex"][style*="flex-wrap: wrap"] > .form-control,
+  .card div[style*="display: flex"][style*="flex-wrap: wrap"] > input,
+  .card div[style*="display: flex"][style*="flex-wrap: wrap"] > select,
+  .card div[style*="display: flex"][style*="flex-wrap: wrap"] > div,
+  .card div[style*="display: flex"][style*="gap: 10"] > .form-control,
+  .card div[style*="display: flex"][style*="gap: 10"] > input,
+  .card div[style*="display: flex"][style*="gap: 10"] > select,
+  .card div[style*="display: flex"][style*="gap: 10"] > div {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: none !important;
+  }
+
+  /* Stack grid forms on mobile */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Make row flex items (e.g. consumption list rows) stack on mobile */
+  .form-flex-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+  }
+  .form-flex-row > select,
+  .form-flex-row > div,
+  .form-flex-row > input {
+    width: 100% !important;
+    flex: none !important;
+  }
+  .form-flex-row > button {
+    align-self: flex-end !important;
+    padding: 8px 16px !important;
+    min-width: 80px;
+  }
+
+  /* Stack header elements of mess page */
+  .mess-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  /* Make master data tabs scroll horizontally on mobile */
+  .master-tabs {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .master-tabs > button {
+    flex: none !important;
+    min-width: 140px;
+  }
+
+  /* Stack two-column grid on master data page */
+  .two-column-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* ═══ ANIMATIONS & VISUAL POLISH ═══════════════════════════════════ */

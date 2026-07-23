@@ -144,7 +144,7 @@ export default function MasterDataPage() {
       {error && <div className="alert alert-error">⚠️ {error}</div>}
 
       {/* ── Tab Bar ── */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+      <div className="master-tabs" style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
         {Object.entries(TAB_CONFIG).map(([id, t]) => (
           <button
             key={id}
@@ -173,7 +173,7 @@ export default function MasterDataPage() {
       </div>
 
       {/* ── Two Column Layout ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 24, alignItems: 'start' }}>
+      <div className="two-column-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 24, alignItems: 'start' }}>
 
         {/* ── LEFT: Data List ── */}
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>

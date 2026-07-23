@@ -3,6 +3,137 @@ import { messAPI } from '../api';
 import MessExcelImportModal from '../components/MessExcelImportModal';
 import { useAuth } from '../context/AuthContext';
 
+import { useRef } from 'react';
+
+// ─── Searchable Dropdown Component ─────────────────────────────────────────────
+function SearchableSelect({ options, placeholder, value, onChange, labelExtractor, valueExtractor }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(o => valueExtractor(o) === value);
+  const displayValue = selectedOption ? labelExtractor(selectedOption) : '';
+
+  const filteredOptions = options.filter(o =>
+    labelExtractor(o).toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
+      <div 
+        onClick={() => { setIsOpen(!isOpen); setSearch(''); }}
+        style={{
+          width: '100%',
+          padding: '10px 14px',
+          background: 'var(--bg2)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-sm)',
+          color: displayValue ? 'var(--text)' : 'var(--text-tertiary)',
+          fontSize: 13.5,
+          cursor: 'pointer',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          minHeight: '40px',
+          fontFamily: 'var(--font-body)',
+        }}
+      >
+        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>
+          {displayValue || placeholder || 'Select...'}
+        </span>
+        <span style={{ fontSize: 9, color: 'var(--text3)', marginLeft: 8 }}>▼</span>
+      </div>
+
+      {isOpen && (
+        <div style={{
+          position: 'absolute',
+          top: '105%',
+          left: 0,
+          right: 0,
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)',
+          boxShadow: '0 12px 36px rgba(0,0,0,0.6)',
+          zIndex: 1000,
+          maxHeight: '280px',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {/* Search Input */}
+          <div style={{ padding: '8px', borderBottom: '1px solid var(--border)', background: 'var(--bg2)' }}>
+            <input
+              type="text"
+              placeholder="🔍 Search item name..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-xs)',
+                color: 'var(--text)',
+                fontSize: 12.5,
+                outline: 'none',
+                fontFamily: 'var(--font-body)',
+              }}
+              autoFocus
+            />
+          </div>
+
+          {/* Option Items */}
+          <div style={{ overflowY: 'auto', flex: 1 }}>
+            {filteredOptions.length === 0 ? (
+              <div style={{ padding: '16px', fontSize: 12.5, color: 'var(--text-tertiary)', textAlign: 'center' }}>
+                No items found
+              </div>
+            ) : (
+              filteredOptions.map((opt, i) => {
+                const optVal = valueExtractor(opt);
+                const isSelected = optVal === value;
+                return (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      onChange(optVal);
+                      setIsOpen(false);
+                    }}
+                    style={{
+                      padding: '14px 16px',
+                      fontSize: 12.5,
+                      color: isSelected ? 'var(--accent-hover)' : 'var(--text2)',
+                      background: isSelected ? 'var(--accent-subtle)' : 'transparent',
+                      cursor: 'pointer',
+                      borderBottom: i < filteredOptions.length - 1 ? '1px solid var(--border)' : 'none',
+                      transition: 'background 0.15s',
+                      fontFamily: 'var(--font-body)',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+                    onMouseLeave={e => e.currentTarget.style.background = isSelected ? 'var(--accent-subtle)' : 'transparent'}
+                  >
+                    {labelExtractor(opt)}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Shared style helpers ─────────────────────────────────────────────────────
 const cardStyle = {
   background: 'var(--surface)',
@@ -240,30 +371,30 @@ function StockCatalogTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* KPI Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
-        {[
-          { label: 'Total Items', value: items.length, emoji: '📦', color: 'var(--accent)' },
-          { label: 'Low Stock', value: lowStockCount, emoji: '⚠️', color: 'var(--warning, #f5a623)' },
-          { label: 'Out of Stock', value: outOfStockCount, emoji: '🔴', color: '#f04040' },
-          { label: 'Stock Value', value: `₹${totalValue.toLocaleString('en-IN')}`, emoji: '💰', color: 'var(--success)' },
-        ].map((kpi, idx) => (
-          <div key={idx} style={{
-            ...cardStyle, padding: 18,
-            background: `linear-gradient(135deg, ${kpi.color}08, ${kpi.color}04)`,
-            borderColor: `${kpi.color}30`,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 22 }}>{kpi.emoji}</span>
-              <div>
-                <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 600 }}>{kpi.label}</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-heading)', marginTop: 2 }}>{kpi.value}</div>
+      {user?.role !== 'mess_staff' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+          {[
+            { label: 'Total Items', value: items.length, emoji: '📦', color: 'var(--accent)' },
+            { label: 'Low Stock', value: lowStockCount, emoji: '⚠️', color: 'var(--warning, #f5a623)' },
+            { label: 'Out of Stock', value: outOfStockCount, emoji: '🔴', color: '#f04040' },
+            { label: 'Stock Value', value: `₹${totalValue.toLocaleString('en-IN')}`, emoji: '💰', color: 'var(--success)' },
+          ].map((kpi, idx) => (
+            <div key={idx} style={{
+              ...cardStyle, padding: 18,
+              background: `linear-gradient(135deg, ${kpi.color}08, ${kpi.color}04)`,
+              borderColor: `${kpi.color}30`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 22 }}>{kpi.emoji}</span>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 600 }}>{kpi.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-heading)', marginTop: 2 }}>{kpi.value}</div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-
+          ))}
+        </div>
+      )}
 
       {/* Toolbar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -294,20 +425,30 @@ function StockCatalogTab() {
             doc.setFontSize(18); doc.setFont('helvetica', 'bold');
             doc.text('Mess Stock Report', 14, 20);
             doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-            doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')} | Items: ${filtered.length} | Value: ₹${totalValue.toLocaleString('en-IN')}`, 14, 28);
+            doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')} | Items: ${filtered.length}${user?.role !== 'mess_staff' ? ` | Value: ₹${totalValue.toLocaleString('en-IN')}` : ''}`, 14, 28);
+            
+            const pdfHeaders = [
+              'Item', 'Telugu Name', 'Category', 'Qty', 'UOM',
+              user?.role !== 'mess_staff' && 'Cost/Unit',
+              user?.role !== 'mess_staff' && 'Total Value',
+              user?.role !== 'mess_staff' && 'Status'
+            ].filter(Boolean);
+
+            const pdfBody = filtered.map(i => [
+              i.name,
+              i.nameTelugu || '—',
+              i.category,
+              i.quantity,
+              i.uom,
+              user?.role !== 'mess_staff' && `₹${i.costPerUnit}`,
+              user?.role !== 'mess_staff' && `₹${(i.quantity * i.costPerUnit).toLocaleString('en-IN')}`,
+              user?.role !== 'mess_staff' && (i.quantity <= 0 ? 'OUT' : i.quantity <= i.threshold ? 'LOW' : 'OK')
+            ].map(row => row.filter(v => v !== false)));
+
             autoTable(doc, {
               startY: 35,
-              head: [['Item', 'Telugu Name', 'Category', 'Qty', 'UOM', 'Cost/Unit', 'Total Value', 'Status']],
-              body: filtered.map(i => [
-                i.name,
-                i.nameTelugu || '—',
-                i.category,
-                i.quantity,
-                i.uom,
-                `₹${i.costPerUnit}`,
-                `₹${(i.quantity * i.costPerUnit).toLocaleString('en-IN')}`,
-                i.quantity <= 0 ? 'OUT' : i.quantity <= i.threshold ? 'LOW' : 'OK'
-              ]),
+              head: [pdfHeaders],
+              body: pdfBody,
               theme: 'grid', headStyles: { fillColor: [94, 106, 210] },
               styles: { fontSize: 8 }
             });
@@ -315,16 +456,21 @@ function StockCatalogTab() {
           }}>📄 PDF</button>
           <button style={btnSecondary} onClick={async () => {
             const XLSX = await import('xlsx');
-            const ws = XLSX.utils.json_to_sheet(filtered.map(i => ({
-              'Item Name': i.name,
-              'Telugu Name': i.nameTelugu || '',
-              Category: i.category,
-              Quantity: i.quantity,
-              UOM: i.uom,
-              'Cost/Unit': i.costPerUnit,
-              'Total Value': i.quantity * i.costPerUnit,
-              Status: i.quantity <= 0 ? 'Out of Stock' : i.quantity <= i.threshold ? 'Low Stock' : 'In Stock'
-            })));
+            const ws = XLSX.utils.json_to_sheet(filtered.map(i => {
+              const row = {
+                'Item Name': i.name,
+                'Telugu Name': i.nameTelugu || '',
+                Category: i.category,
+                Quantity: i.quantity,
+                UOM: i.uom,
+              };
+              if (user?.role !== 'mess_staff') {
+                row['Cost/Unit'] = i.costPerUnit;
+                row['Total Value'] = i.quantity * i.costPerUnit;
+                row['Status'] = i.quantity <= 0 ? 'Out of Stock' : i.quantity <= i.threshold ? 'Low Stock' : 'In Stock';
+              }
+              return row;
+            }));
             const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Mess Stock');
             XLSX.writeFile(wb, 'Mess_Stock_Report.xlsx');
           }}>📗 Excel</button>
@@ -337,13 +483,13 @@ function StockCatalogTab() {
           <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 16, fontFamily: 'var(--font-heading)' }}>
             {editingItem ? '✏️ Edit Item' : '📝 Add New Mess Item'}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
             <div><label style={labelStyle}>Item Name</label><input style={inputStyle} required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Basmati Rice" /></div>
             <div><label style={labelStyle}>Telugu Name</label><input style={inputStyle} value={form.nameTelugu} onChange={e => setForm({ ...form, nameTelugu: e.target.value })} placeholder="e.g. ఉల్లిపాయ" /></div>
             <div><label style={labelStyle}>Category</label><select style={selectStyle} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
             <div><label style={labelStyle}>Quantity</label><input style={inputStyle} required type="number" min="0" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} /></div>
             <div><label style={labelStyle}>Unit</label><select style={selectStyle} value={form.uom} onChange={e => setForm({ ...form, uom: e.target.value })}>{UOM_OPTIONS.map(u => <option key={u} value={u}>{u}</option>)}</select></div>
-            {user?.role === 'admin' && (
+            {user?.role !== 'mess_staff' && (
               <div><label style={labelStyle}>Low Stock Threshold</label><input style={inputStyle} type="number" min="0" value={form.threshold} onChange={e => setForm({ ...form, threshold: e.target.value })} /></div>
             )}
             <div><label style={labelStyle}>Cost/Unit (₹)</label><input style={inputStyle} type="number" min="0" value={form.costPerUnit} onChange={e => setForm({ ...form, costPerUnit: e.target.value })} /></div>
@@ -376,7 +522,16 @@ function StockCatalogTab() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['Item Name', 'Category', 'Qty', 'UOM', 'Cost/Unit', 'Total Value', 'Status', (can('edit') || can('delete')) ? 'Actions' : ''].filter(Boolean).map((h, i) => (
+                {[
+                  'Item Name',
+                  'Category',
+                  'Qty',
+                  'UOM',
+                  user?.role !== 'mess_staff' && 'Cost/Unit',
+                  user?.role !== 'mess_staff' && 'Total Value',
+                  user?.role !== 'mess_staff' && 'Status',
+                  ((can('edit') && user?.role !== 'mess_staff') || (can('delete') && user?.role !== 'mess_staff')) ? 'Actions' : ''
+                ].filter(Boolean).map((h, i) => (
                   <th key={i} style={{ padding: '14px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.8px', background: 'var(--accent-subtle)' }}>{h}</th>
                 ))}
               </tr>
@@ -396,14 +551,14 @@ function StockCatalogTab() {
                   </td>
                   <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-heading)' }}>{item.quantity}</td>
                   <td style={{ padding: '12px 16px', color: 'var(--text3)' }}>{item.uom}</td>
-                  <td style={{ padding: '12px 16px', color: 'var(--text2)' }}>₹{item.costPerUnit}</td>
-                  <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>₹{(item.quantity * item.costPerUnit).toLocaleString('en-IN')}</td>
-                  <td style={{ padding: '12px 16px' }}><StockBadge quantity={item.quantity} threshold={item.threshold} /></td>
-                  {(can('edit') || can('delete')) && (
+                  {user?.role !== 'mess_staff' && <td style={{ padding: '12px 16px', color: 'var(--text2)' }}>₹{item.costPerUnit}</td>}
+                  {user?.role !== 'mess_staff' && <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text)' }}>₹{(item.quantity * item.costPerUnit).toLocaleString('en-IN')}</td>}
+                  {user?.role !== 'mess_staff' && <td style={{ padding: '12px 16px' }}><StockBadge quantity={item.quantity} threshold={item.threshold} /></td>}
+                  {((can('edit') && user?.role !== 'mess_staff') || (can('delete') && user?.role !== 'mess_staff')) && (
                     <td style={{ padding: '12px 16px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        {can('edit') && <button style={btnSecondary} onClick={() => handleEdit(item)}>✏️</button>}
-                        {can('delete') && <button style={btnDanger} onClick={() => handleDelete(item._id)}>🗑️</button>}
+                        {can('edit') && user?.role !== 'mess_staff' && <button style={btnSecondary} onClick={() => handleEdit(item)}>✏️</button>}
+                        {can('delete') && user?.role !== 'mess_staff' && <button style={btnDanger} onClick={() => handleDelete(item._id)}>🗑️</button>}
                       </div>
                     </td>
                   )}
@@ -495,7 +650,7 @@ function ConsumptionLoggerTab() {
         </div>
 
         {/* Issued Context Fields */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 16 }}>
+        <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 16 }}>
           <div>
             <label style={labelStyle}>Date of Issued</label>
             <input style={inputStyle} type="date" required value={date} onChange={e => setDate(e.target.value)} />
@@ -547,11 +702,23 @@ function ConsumptionLoggerTab() {
           {usedEntries.map((entry, idx) => {
             const selectedItem = items.find(i => i._id === entry.item);
             return (
-            <div key={idx} style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'center' }}>
-              <select style={{ ...selectStyle, flex: 2 }} value={entry.item} onChange={e => { const copy = [...usedEntries]; copy[idx].item = e.target.value; const selItem = items.find(i => i._id === e.target.value); if (selItem) copy[idx].uom = selItem.uom || 'Kg'; else copy[idx].uom = ''; setUsedEntries(copy); }}>
-                <option value="">Select item...</option>
-                {items.map(i => <option key={i._id} value={i._id}>{i.name} {i.nameTelugu ? `(${i.nameTelugu})` : ''} ({i.quantity} {i.uom} avail)</option>)}
-              </select>
+            <div key={idx} className="form-flex-row" style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'center' }}>
+              <div style={{ flex: 2, minWidth: 150 }}>
+                <SearchableSelect
+                  options={items}
+                  placeholder="Select item..."
+                  value={entry.item}
+                  onChange={val => {
+                    const copy = [...usedEntries];
+                    copy[idx].item = val;
+                    const selItem = items.find(i => i._id === val);
+                    copy[idx].uom = selItem ? (selItem.uom || 'Kg') : '';
+                    setUsedEntries(copy);
+                  }}
+                  labelExtractor={i => `${i.name} ${i.nameTelugu ? `(${i.nameTelugu})` : ''} (${i.quantity} ${i.uom} avail)`}
+                  valueExtractor={i => i._id}
+                />
+              </div>
               <div style={{ flex: 1 }}>
                 <input style={inputStyle} type="number" min="0" step="0.1" placeholder="Qty used" value={entry.qtyUsed}
                   onChange={e => { const copy = [...usedEntries]; copy[idx].qtyUsed = e.target.value; setUsedEntries(copy); }} />
@@ -579,11 +746,23 @@ function ConsumptionLoggerTab() {
           {spoilEntries.map((entry, idx) => {
             const selectedItem = items.find(i => i._id === entry.item);
             return (
-            <div key={idx} style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'center' }}>
-              <select style={{ ...selectStyle, flex: 2 }} value={entry.item} onChange={e => { const copy = [...spoilEntries]; copy[idx].item = e.target.value; const selItem = items.find(i => i._id === e.target.value); if (selItem) copy[idx].uom = selItem.uom || 'Kg'; else copy[idx].uom = ''; setSpoilEntries(copy); }}>
-                <option value="">Select item...</option>
-                {items.map(i => <option key={i._id} value={i._id}>{i.name} {i.nameTelugu ? `(${i.nameTelugu})` : ''} ({i.quantity} {i.uom})</option>)}
-              </select>
+            <div key={idx} className="form-flex-row" style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'center' }}>
+              <div style={{ flex: 2, minWidth: 150 }}>
+                <SearchableSelect
+                  options={items}
+                  placeholder="Select item..."
+                  value={entry.item}
+                  onChange={val => {
+                    const copy = [...spoilEntries];
+                    copy[idx].item = val;
+                    const selItem = items.find(i => i._id === val);
+                    copy[idx].uom = selItem ? (selItem.uom || 'Kg') : '';
+                    setSpoilEntries(copy);
+                  }}
+                  labelExtractor={i => `${i.name} ${i.nameTelugu ? `(${i.nameTelugu})` : ''} (${i.quantity} ${i.uom} avail)`}
+                  valueExtractor={i => i._id}
+                />
+              </div>
               <div style={{ flex: 1 }}>
                 <input style={inputStyle} type="number" min="0" step="0.1" placeholder="Qty spoiled" value={entry.qtySpoiled}
                   onChange={e => { const copy = [...spoilEntries]; copy[idx].qtySpoiled = e.target.value; setSpoilEntries(copy); }} />
@@ -715,7 +894,7 @@ function WeeklyMenuTab() {
           <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 18, fontFamily: 'var(--font-heading)' }}>
             ✏️ Editing Menu: <span style={{ color: 'var(--accent)' }}>{editDay}</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
             {['breakfast', 'lunch', 'snacks', 'dinner'].map(mealKey => (
               <div key={mealKey} style={{ background: 'var(--accent-subtle)', borderRadius: 'var(--radius-sm)', padding: 14, border: '1px solid var(--border)' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 10, textTransform: 'capitalize' }}>
@@ -1115,13 +1294,17 @@ function PurchasesTab() {
           <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 18, fontFamily: 'var(--font-heading)' }}>
             💰 Record Vegetable/Grocery Purchase
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 16 }}>
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 16 }}>
             <div>
               <label style={labelStyle}>Item from Catalog</label>
-              <select style={selectStyle} required value={form.item} onChange={e => setForm({ ...form, item: e.target.value })}>
-                <option value="">Select item...</option>
-                {items.map(i => <option key={i._id} value={i._id}>{i.name} {i.nameTelugu ? `(${i.nameTelugu})` : ''}</option>)}
-              </select>
+              <SearchableSelect
+                options={items}
+                placeholder="Select item..."
+                value={form.item}
+                onChange={val => setForm({ ...form, item: val })}
+                labelExtractor={i => `${i.name} ${i.nameTelugu ? `(${i.nameTelugu})` : ''}`}
+                valueExtractor={i => i._id}
+              />
             </div>
             <div>
               <label style={labelStyle}>Purchase Date</label>
@@ -1318,7 +1501,7 @@ function ServedMealsTab() {
           </div>
           
           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 10 }}>Meal Information</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 16 }}>
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 16 }}>
             <div>
               <label style={labelStyle}>Date Served</label>
               <input style={inputStyle} type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
@@ -1348,7 +1531,7 @@ function ServedMealsTab() {
           </div>
 
           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 10, marginTop: 10 }}>Attendance Breakdown (Pax)</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 14, marginBottom: 16 }}>
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 14, marginBottom: 16 }}>
             <div>
               <label style={labelStyle}>Boys Hostel</label>
               <input style={inputStyle} type="number" min="0" placeholder="0" value={form.boysHostel} onChange={e => setForm({ ...form, boysHostel: e.target.value })} />
@@ -1635,13 +1818,17 @@ function DailyGroceriesSuppliesTab() {
           <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 18, fontFamily: 'var(--font-heading)' }}>
             🥬 Record Daily Grocery Supply/Issue
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 16 }}>
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 16 }}>
             <div>
               <label style={labelStyle}>Item Name *</label>
-              <select style={selectStyle} required value={form.item} onChange={e => setForm({ ...form, item: e.target.value })}>
-                <option value="">Select item...</option>
-                {items.map(i => <option key={i._id} value={i._id}>{i.name} {i.nameTelugu ? `(${i.nameTelugu})` : ''} ({i.quantity} {i.uom} avail)</option>)}
-              </select>
+              <SearchableSelect
+                options={items}
+                placeholder="Select item..."
+                value={form.item}
+                onChange={val => setForm({ ...form, item: val })}
+                labelExtractor={i => `${i.name} ${i.nameTelugu ? `(${i.nameTelugu})` : ''} (${i.quantity} ${i.uom} avail)`}
+                valueExtractor={i => i._id}
+              />
             </div>
             <div>
               <label style={labelStyle}>Date of Issued *</label>
@@ -1752,7 +1939,7 @@ export default function MessPage() {
   return (
     <div className="page" style={{ maxWidth: 1400, margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+      <div className="mess-header" style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <span style={{ fontSize: 30 }}>🍽️</span>
           <div>
